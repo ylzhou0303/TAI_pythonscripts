@@ -1,0 +1,42 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Dec 30 18:22:06 2022
+
+@author: YZ60069
+"""
+
+#%% This file analyzes the biogeochemistry of each grid under O2 spatial heterogeneity
+# to investigate how O2 heterogeneity is influencing the biogeochemistry
+
+import pandas as pd
+
+
+#%% Heat map for different variables concentrations at different depths
+nx = 7
+ny = 7
+nz = 6
+
+
+var = 5
+layer = 2
+i_start = (nz - layer) * nx * ny
+i_end = i_start + nx * ny
+
+M = Full_Data[i_start:i_end, 30, var]  #extract the data to be inevestigated, by specifying the layer, timepoint, and variable id
+A = M.reshape(nx, ny)      #this is a 7*7matrix, representing the view from top of the soil grids
+B = np.flipud(A)   #flip upside down the matrix so that the grids with smaller y coordinates are at the bottom
+                   #same as in the field
+plt.imshow(B, cmap ="Reds")
+plt.colorbar()
+plt.title(Var_str[var])
+
+#%% compare the concentration between different grids
+plt.bar(list(range(0, nx*ny)), M, color = 'skyblue', width = 0.4)
+plt.title(Var_str[var])
+plt.ylabel(Var_str[var])
+plt.xlabel('Grid IDs')
+
+
+#%% Heat maps for reaction rates
+
+
