@@ -90,7 +90,7 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 5  #specify which variable to plot
+var_id = 2 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0:ngrids:interval,2] - 0.7  #minus the depth of the soil profile
@@ -119,9 +119,10 @@ plt.rcParams.update({'font.size': 13})
 
 #%% plot the depth profiles of all different columns
 ncols = nx * ny
+t = 30
 
 for i in range(0, ncols):
-    conc = Full_Data[i:ngrids:ncols, ntimepoint - 1, var_id]
+    conc = Full_Data[i:ngrids:ncols, t, var_id]
     plt.plot(conc, depths)
     
 plt.xlabel(var_str)

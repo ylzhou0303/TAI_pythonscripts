@@ -17,12 +17,12 @@ ny = 10
 nz = 6
 
 
-var = 1
-layer = 1
+var = 2
+layer = 2
 i_start = (nz - layer) * nx * ny
 i_end = i_start + nx * ny
 
-M = Full_Data[i_start:i_end, 30, var]   #extract the data to be inevestigated, by specifying the layer, timepoint, and variable id
+M = Full_Data[i_start:i_end, 30, var]    #extract the data to be inevestigated, by specifying the layer, timepoint, and variable id
 A = M.reshape(nx, ny)      #this is a 7*7matrix, representing the view from top of the soil grids
 B = np.flipud(A)   #flip upside down the matrix so that the grids with smaller y coordinates are at the bottom
                    #same as in the field

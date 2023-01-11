@@ -8,28 +8,52 @@ Created on Wed Nov 30 11:19:14 2022
 #%% Generate radomized numbers for the location of roots
 import random
 import numpy as np
-nx = 7
-ny = 7
+nx = 10
+ny = 10
+nroots = 20
 
 #Define matrices of X and Y coordinates
-XCoords = np.empty (shape = (nx,ny))
+XCoords = np.zeros (shape = (nx,ny))
 for i in range(0,nx):
-    XCoords[i, :] = np.arange(0.07, 0.98, 0.14)
+    XCoords[i, :] = np.arange(0.005, 0.096, 0.01)
 
 
-YCoords = np.empty (shape = (nx,ny))
+YCoords = np.zeros (shape = (nx,ny))
 for i in range(0,ny):
-    YCoords[:, i] = np.arange(0.07, 0.98, 0.14)
+    YCoords[:, i] = np.arange(0.005, 0.096, 0.01)
 
 
-# Generate random numbers for the ID of the grids containing root
-RootGrids = np.empty( shape = (1,9) , dtype = np.int32)
-RootLocs = np.empty( shape = (2,9) )
+#%% Generate random numbers for the ID of the grids containing root
+RootGrids = np.zeros(shape = (nroots), dtype = np.int0)
+i = 0
 
-for i in range(0,9):
-    RootGrids[0, i] = random.randint(1, 49)   # generate the ID of the subgrids
-    idx_line = (RootGrids[0, i] - 1) // nx   # locate which x and y coordinates to take
-    idx_row = (RootGrids[0, i] - 1) % nx
+while 0 in RootGrids:
+    r = random.randint(0, nx*ny -1 )
+    if r not in RootGrids:
+        RootGrids[i] = r
+        i = i + 1
+
+#%% find out the coordinates of these grids with roots  
+X = XCoords.reshape((nx*ny))
+Y = YCoords.reshape((nx*ny))
+
+RootLocs = []
+for i in range(nroots):
+    RootLocs.append([X[RootGrids[i]], Y[RootGrids[i]]])
+
+RootLocs = np.around(np.array(RootLocs),3)
+
+
+
+#%% compile for the PFLOTRAN input
+Strs = ''
+depth = 0.6
+
+for i in range(nroots):
     
-    RootLocs[0,i] = XCoords[idx_line, idx_row] #the X coordinate of the root location
-    RootLocs[1,i] = YCoords[idx_line, idx_row] #the y coordinate of the root location
+    temp_str = ('REGION root' + str(i + 1) + '\n\tCOORDINATES\n\t\t' + str(RootLocs[i,0]) + '  ' + str(RootLocs[i,1])
+                + '  ' + str(depth) + '\n\t\t' + str(RootLocs[i,0]) + '  ' + str(RootLocs[i,1]) + '  ' + str(depth)
+                + '\n\t/\n\tFACE TOP\nEND')
+                
+    Strs = Strs + '\n\n' + temp_str
+
