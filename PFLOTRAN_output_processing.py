@@ -90,7 +90,7 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 2 #specify which variable to plot
+var_id = 1 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0:ngrids:interval,2] - 0.7  #minus the depth of the soil profile
@@ -122,13 +122,14 @@ ncols = nx * ny
 t = 30
 
 for i in range(0, ncols):
-    conc = Full_Data[i:ngrids:ncols, t, var_id]
+    conc = Full_Data[i:ngrids:ncols, t, var_id] * 1e6
     plt.plot(conc, depths)
     
-plt.xlabel(var_str)
+plt.xlabel(var_str[0:len(var_str) - 4] + ' uM')
+#plt.xlabel('O2 sat(%)')
 plt.ylabel('Soil Depth (m)')
 plt.rcParams.update({'font.size': 12})
-plt.title('Conc. profiles of all columns')
+#plt.title('Conc. profiles of all columns')
 
 #%% calculate the mean profiles of all columns
 Data_varin = Full_Data[:,:, var_id].reshape(nz, nx*ny, ntimepoint)
@@ -165,63 +166,82 @@ with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + 
        
     
 #%% Plot the profiles from different set up
-nx = 7
-ny = 7
-nz = 5
-ngrids = nx * ny * nz
-ntimepoint = 31
-timepoint = 30
 
-var_id = 1
-Var_str = {0: 'Liquid Saturation', 1: 'Total O2(aq) [M]', 2: 'Total CH4(aq) [M]', 3: 'Total DOM1 [M]', 4: 'Total SO4-- [M]',
-           5: 'Total H2S(aq) [M]', 6: 'microbes1 [mol/m^3]', 7: 'microbes2 [mol/m^3]', 8: 'microbes3 [mol/m^3]', 
-           9: 'microbes4 [mol/m^3]', 10: 'microbes5 [mol/m^3]', 11: 'Total Tracer [M]'}
 
 plt.rcParams.update({'font.size': 15})
-
-
 fig, ax = plt.subplots()
-# # field data
-# Conc = np.array(FieldData['Sulfide'])
-# depths = -np.array(FieldData['Depth']) * 1e-2
-# plt.plot(Conc, depths, 'ko', label = 'Field')
 
-Conc = Data_noroot[1][:,:,var_id].reshape(nz, nx*ny, ntimepoint)
-MeanProfs = Conc.mean(axis = 1) 
-depths = Data_noroot[2]
-plt.plot(MeanProfs[:,timepoint], depths, 'k-', label = 'no heterogeneity')  #plot data of the last timepoint
+var_id = 5
+var_str = Var_str[var_id]
+t = 30
+# calculate and plot mean profiles
+MeanProfs = []
+for z in range(0,nz):
+    i_start = nx * ny * z
+    i_end = nx * ny * (z + 1)
+    temp_mean = np.mean(Full_Data_roots[i_start:i_end, :, var_id] , axis = 0)
+    MeanProfs.append(temp_mean)
 
-
-
-Conc = Data_1root[1][:,:,var_id].reshape(nz, nx*ny, ntimepoint)
-MeanProfs = Conc.mean(axis = 1) 
-depths = Data_1root[2]
-plt.plot(MeanProfs[:,timepoint], depths, 'r-', label = '1 root')
+MeanProfs = np.array(MeanProfs) * 1e6
+plt.plot(MeanProfs[:,t], depths, 'k-', label = '20 roots')
 
 
+MeanProfs = []
+for z in range(0,nz):
+    i_start = nx * ny * z
+    i_end = nx * ny * (z + 1)
+    temp_mean = np.mean(Full_Data[i_start:i_end, :, var_id] , axis = 0)
+    MeanProfs.append(temp_mean)
 
-Conc = Data_9roots[1][:,:,var_id].reshape(nz, nx*ny, ntimepoint)
-MeanProfs = Conc.mean(axis = 1) 
-depths = Data_9roots[2]
-plt.plot(MeanProfs[:,timepoint], depths, 'g-', label = '9 roots')
-
-
-
-Conc = Data_noO2inj[1][:,:,var_id].reshape(nz, nx*ny, ntimepoint)
-MeanProfs = Conc.mean(axis = 1) 
-depths = Data_noO2inj[2]
-plt.plot(MeanProfs[:,timepoint], depths, 'b-', label = 'no plant O2 injection')
-
-#saturation line for oxygen
-#plt.plot([8, 8], [0, -0.7] , 'b--')
-
-
-plt.xlabel(Var_str[var_id])
-plt.ylabel('Depth (m)')
+MeanProfs = np.array(MeanProfs) * 1e6
+plt.plot(MeanProfs[:,t], depths, 'k--', label = 'O2 input homogeneity')
 plt.legend(loc = 0)
 
-# os.chdir('C:\MBL\Conferences\AGU 2022\Poster')
-# fig.savefig('Sulfide.eps', dpi = 600, format='eps')
+plt.xlabel(var_str[0:len(var_str)-4] + ' uM')
+plt.ylabel('Depths(m)')
+
+
+# # # field data
+# # Conc = np.array(FieldData['Sulfide'])
+# # depths = -np.array(FieldData['Depth']) * 1e-2
+# # plt.plot(Conc, depths, 'ko', label = 'Field')
+
+# # Conc = Data_noroot[1][:,:,var_id].reshape(nz, nx*ny, ntimepoint)
+# # MeanProfs = Conc.mean(axis = 1) 
+# # depths = Data_noroot[2]
+# # plt.plot(MeanProfs[:,timepoint], depths, 'k-', label = 'no heterogeneity')  #plot data of the last timepoint
+
+
+
+# # Conc = Data_1root[1][:,:,var_id].reshape(nz, nx*ny, ntimepoint)
+# # MeanProfs = Conc.mean(axis = 1) 
+# # depths = Data_1root[2]
+# # plt.plot(MeanProfs[:,timepoint], depths, 'r-', label = '1 root')
+
+# t = 30
+
+# Conc = Full_Data_roots[:,t,var_id].reshape(nz, nx*ny, ntimepoint)
+# MeanProfs = Conc.mean(axis = 1) 
+# depths = depths
+# plt.plot(MeanProfs[:,t], depths, 'g-', label = '9 roots')
+
+
+
+# Conc = Data_noO2inj[1][:,:,var_id].reshape(nz, nx*ny, ntimepoint)
+# MeanProfs = Conc.mean(axis = 1) 
+# depths = Data_noO2inj[2]
+# plt.plot(MeanProfs[:,timepoint], depths, 'b-', label = 'no plant O2 injection')
+
+# #saturation line for oxygen
+# #plt.plot([8, 8], [0, -0.7] , 'b--')
+
+
+# plt.xlabel(Var_str[var_id])
+# plt.ylabel('Depth (m)')
+# plt.legend(loc = 0)
+
+# # os.chdir('C:\MBL\Conferences\AGU 2022\Poster')
+# # fig.savefig('Sulfide.eps', dpi = 600, format='eps')
 
 #%% Plot the time series of different set up
 plt.rcParams.update({'font.size': 10})

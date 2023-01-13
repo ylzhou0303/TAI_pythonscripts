@@ -17,12 +17,13 @@ ny = 10
 nz = 6
 
 
-var = 2
+var = 1
+var_str = Var_str[var]
 layer = 2
 i_start = (nz - layer) * nx * ny
 i_end = i_start + nx * ny
 
-M = Full_Data[i_start:i_end, 30, var]    #extract the data to be inevestigated, by specifying the layer, timepoint, and variable id
+M = Full_Data[i_start:i_end, 30, var] * 1e6    #extract the data to be inevestigated, by specifying the layer, timepoint, and variable id
 A = M.reshape(nx, ny)      #this is a 7*7matrix, representing the view from top of the soil grids
 B = np.flipud(A)   #flip upside down the matrix so that the grids with smaller y coordinates are at the bottom
                    #same as in the field
@@ -31,6 +32,7 @@ ax = plt.gca()
 ax.grid(color='red', linestyle='-.', linewidth=0)
 plt.colorbar()
 #plt.title("O2 saturation (%)")
+plt.title(var_str[0:len(var_str) - 4] + ' uM')
 
 #%% compare the concentration between different grids
 plt.bar(list(range(0, nx*ny)), M, color = 'skyblue', width = 0.4)

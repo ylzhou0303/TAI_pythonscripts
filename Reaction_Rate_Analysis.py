@@ -22,77 +22,11 @@ os.chdir('C:/Users/yz60069/TAI/TAI_fresh')
 #os.chdir('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Marsh Interior/All inundated/ root')
 import scipy.io
 #mat = scipy.io.loadmat('WaterTableData.mat')
-#%% specify the pflotran output structure
-nx = 7
-ny = 7
-nz = 7
-nline = nx * ny * nz
-ntimepoint = 31
-
-
-#%% import data
-nvars = 6;  #number of variables that I want to investigate
-Full_Data = np.empty( shape = (nline,ntimepoint,nvars), dtype = np.float32)
-Var_str = {0: 'Liquid Saturation', 1: 'Total O2(aq) [M]', 2: 'Total CH4(aq) [M]', 3: 'Total DOM1 [M]', 4: 'Total SO4-- [M]',
-           5: 'Total H2S(aq) [M]'}
-# the dictionary in which the variable ID is coupled with the variable name
-
-
-for var_id in range(0,nvars):
-    
-    var_str = Var_str[var_id]
-    # Read in data from PFLOTRAN
-    Data_Page = np.empty( shape = (nline,ntimepoint), dtype = np.float32)
-    w = 0
-    
-    
-    
-    for i in range(0,ntimepoint):
-       
-        if i < 10:
-           file_name = 'TAI_wetlands-00' + str(i) + '.tec'
-        elif (i == 10 or i > 10) and i < 100:
-           file_name = 'TAI_wetlands-0' + str(i) + '.tec'
-        elif (i == 100 or i > 100) and i < 1000:
-           file_name = 'TAI_wetlands-' + str(i) + '.tec'
-        
-        with open(file_name,'r') as inputFile:
-            read_lines = inputFile.readlines()
-           
-        parameter_str = read_lines[1] #read in the 2nd line, getting variable names as strings
-        parameter_list = parameter_str.replace('"','').replace('\n','').split(',')
-        data_list = [] #define a list 
-        results = {} #define a dic called results where the numbers are paired with the variable names
-        
-        for k in range(3, len(read_lines)):
-            data_str = read_lines[k].replace(' -','  -').replace('    ','  ').split('  ')
-            data_list.append(np.array(data_str, dtype = np.float32))
-            
-          
-        data_list = np.array(data_list)   #convert the list into numpy array
-        
-        for j in range(0, len(parameter_list)):
-            results[parameter_list[j]] = data_list[:,j]
-        
-        Data_Page[:,w] = results[var_str]
-        w = w + 1
-
-    
-
-    Full_Data[:,:,var_id] = Data_Page
-
-
-
-# the coordinates
-Coord = np.empty( shape = (nline,3) , dtype = np.float32 )
-Coord[:,0] = results['VARIABLES=X [m]']
-Coord[:,1] = results['Y [m]']
-Coord[:,2] = results['Z [m]']
 
 
 #%% create a list to store the reaction rates and monod terms
 K_df = {'DOMAer': [5e-8, 1e-4, 0, 2e-3, 0, 0], 'Met': [7e-10, 0, 0, 2e-3, 0, 0],
-     'MetOxi':[5e-9, 1e-4, 3e-4, 0, 0, 0], 'SulRed': [1e-8, 0, 0, 2e-3, 5e-3, 0],
+     'MetOxi':[5e-8, 1e-4, 3e-4, 0, 0, 0], 'SulRed': [1e-8, 0, 0, 2e-3, 5e-3, 0],
      'SulOxi': [5e-9, 1e-4, 0, 0, 0, 3e-4]}
 
 K_df = pd.DataFrame(K_df)
@@ -165,7 +99,7 @@ plt.title(K_df.columns[reac])
 #%% relationship between O2 and reaction rates
 t = 30       #specify the point time
 var = 1      #specify the species
-reac = 3     #specify the reaction 
+reac = 1     #specify the reaction 
 
 layer = 2        #specify which layer, layer 1 is the top layer, layer 2 is where the ROL is
 i_start = (nz - layer) * nx * ny
@@ -181,8 +115,20 @@ plt.title(K_df.columns[reac])
 
 
 
+#%% plot concentration vs reaction rate
+reac = 1
+
+x = np.arange(2e-5, 2e-2, 1e-6)
+monod = x / (x + 2e-3)
+y = K[0, reac] * monod
+plt.plot(x, y, 'b-')
 
 
+#real reaction rate based on concentrations
+x = Full_Data[:,30,3]
+monod = x / (x + 2e-3)
+y = K[0,reac] * monod
+plt.plot(x, y, 'ko')
 
 #%% Methane production, I keep this section to verify the results calculated above
 k = 9e-10
