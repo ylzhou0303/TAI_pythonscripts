@@ -23,7 +23,7 @@ import scipy.io
 #%% specify the pflotran output structure
 nx = 10
 ny = 10
-nz = 6
+nz = 9
 ngrids = nx * ny * nz
 ntimepoint = 31
 
@@ -93,10 +93,10 @@ Coord[:,2] = results['Z [m]']
 var_id = 1 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
-depths = Coord[0:ngrids:interval,2] - 0.7  #minus the depth of the soil profile
+depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
 
 for i in range(0,30,1):
-    conc = Full_Data[97:ngrids:interval, i, var_id]
+    conc = Full_Data[96 : ngrids : interval, i, var_id] / 2.5e-4 * 100
     plt.plot(conc, depths)
     
 
@@ -107,9 +107,9 @@ ax.set_ylabel('Soil Depth (m)')
 #plt.xticks(np.arange(0, 2e-4, step = 5e-5))   
 #plt.xticks(np.arange(5.8e-4, 6.2e-4, step = 1e-5)) 
 plt.rcParams.update({'font.size': 12})
+#plt.ylim(-0.1,0)
 
-
- #%% plot the time series of the variable
+#%% plot the time series of the variable
 
 plt.plot(Full_Data[243, :, var_id])   #bigger row number means closer to the soil surface
 ax=plt.gca()
@@ -122,7 +122,7 @@ ncols = nx * ny
 t = 30
 
 for i in range(0, ncols):
-    conc = Full_Data[i:ngrids:ncols, t, var_id] * 1e6
+    conc = Full_Data[i:ngrids:ncols, t, var_id] / 2.5e-4 * 100
     plt.plot(conc, depths)
     
 plt.xlabel(var_str[0:len(var_str) - 4] + ' uM')
@@ -130,6 +130,8 @@ plt.xlabel(var_str[0:len(var_str) - 4] + ' uM')
 plt.ylabel('Soil Depth (m)')
 plt.rcParams.update({'font.size': 12})
 #plt.title('Conc. profiles of all columns')
+plt.ylim(-0.2, -0.03)
+plt.xlim(0,20)
 
 #%% calculate the mean profiles of all columns
 Data_varin = Full_Data[:,:, var_id].reshape(nz, nx*ny, ntimepoint)
@@ -384,3 +386,7 @@ ax = plt.gca()
 ax.set_xlabel('Time (hr)')
 ax.set_ylabel('O2(aq) (mg/L)')
 ax.set_ylim(-0.1, 4.2)
+
+
+#%% Draw the discretization of the model along depths
+plt.plot(np.ones(len(depths)), depths, 'ko')
