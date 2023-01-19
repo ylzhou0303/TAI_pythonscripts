@@ -25,45 +25,52 @@ import scipy.io
 
 
 #%% create a list to store the reaction rates and monod terms
-K_df = {'DOMAer': [5e-8, 1e-4, 0, 2e-3, 0, 0], 'Met': [7e-10, 0, 0, 2e-3, 0, 0],
-     'MetOxi':[5e-8, 1e-4, 3e-4, 0, 0, 0], 'SulRed': [1e-8, 0, 0, 2e-3, 5e-3, 0],
-     'SulOxi': [5e-9, 1e-4, 0, 0, 0, 3e-4]}
 
+
+# 1. data frame for maximum reaction rate constants
+K_df = {'DOMAer': [5e-8], 'Met': [1e-9], 'MetOxi': [5e-9], 'SulRed': [1e-8],'SulOxi': [5e-9]}
 K_df = pd.DataFrame(K_df)
-K_df.index = ['k','Monod_o2', 'Monod_ch4', 'Monod_dom', 'Monod_so4', 'Monod_h2s']
-# There are six numbers for each term, the first number is the maximum reaction rate, the next five numbers are the Monod
-# terms for O2, CH4, DOM, SO4, H2S, respectively. If a certain molecule is not in the Monod expression of that
-# reaction, I set it to be 0
-
 K = np.array(K_df)
 
 
 
+# 2. data frame for monod half saturation constants
+HSC_df = {'DOMAer': [1e-4, 0, 2e-3, 0, 0], 'Met': [0, 0, 2e-3, 0, 0],
+     'MetOxi':[1e-4, 3e-4, 0, 0, 0], 'SulRed': [0, 0, 2e-3, 5e-3, 0],
+     'SulOxi': [1e-4, 0, 0, 0, 3e-4]}   #HSC: half saturation constant
+
+HSC_df = pd.DataFrame(HSC_df)
+HSC_df.index = ['Monod_o2', 'Monod_ch4', 'Monod_dom', 'Monod_so4', 'Monod_h2s']
+# There are six numbers for each term, the first number is the maximum reaction rate, the next five numbers are the Monod
+# terms for O2, CH4, DOM, SO4, H2S, respectively. If a certain molecule is not in the Monod expression of that
+# reaction, I set it to be 0
+HSC = np.array(HSC_df)
+
+
 #%% This function calculates the actual reaction rates based on the maximum reaction rates, monod constants, and concentrations
-def rate_calc(K, Full_Data):
-    Rates = np.zeros(shape = (ngrids, ntimepoint, 5), dtype = np.float32)
+nreac = 5
+nspecies = 5
+
+def rate_calc(K, HSC, Conc):
+    Rates = np.zeros(shape = (ngrids, ntimepoint, nreac), dtype = np.float32)
     
-    for n in range(0,5):                      #calculate the rates for each reaction one by one
-        monod_c = K[1:6,n].reshape(1,5)       #extract the monod constants that will be used in this loop, i.e. this reaction
-        k = K[0,n]                            #extract the maximum reaction rate used in this loop, i.e.for this reaction
+    for n in range(0,nreac):                      #calculate the rates for each reaction one by one                
+        Monod = np.ones(shape = (ngrids, ntimepoint))  #init a Monod matrix for accumulative multiplication of the monod terms 
         
-        for t in range(0,ntimepoint):        #calculate the actual rates for each timepoint, one timepoint by one timepoint
-            Conc = Full_Data[:,t,1:6]        #extract the concentrations of all variables used for this loop, i.e. for this timepoint
-            monod = Conc / (monod_c + Conc)  #calculate the monod expression
-            monod_mul = np.zeros(shape = (ngrids), dtype = np.float32)   
-            
-            for g in range(0,ngrids):        #multiply all the monod terms of each variable for each grid, one grid by one grid
-                monod_mul[g] = reduce(lambda x,y: x*y, monod[g,:])    #multiply the monod term of each variable
-                
-            rate = k * monod_mul            #Calculate the actual rate for each grid 
-            Rates[:,t,n] = rate             #save the rate for this timepoint and this reaction, then go into the next loop, i.e. next timepoint    
+        for j in range(0,nspecies):
+            if HSC[j,n] != 0:             #if the hsc is not zeros, it means that the reaction rate is dependent on this species
+                monod_temp = Conc[:,:,j] / (Conc[:,:,j] + HSC[j,n])
+                Monod = Monod * monod_temp
+        
+        Rates[:,:,n] = K[0,n] * Monod             #save the rate for this timepoint and this reaction, then go into the next loop, i.e. next timepoint    
     
     return Rates
         
             
             
 #%% calculate reaction rates for all reactions
-Rates = rate_calc(K, Full_Data)
+Conc = Full_Data[:,:,1:6]  #concentration of the five species investigated
+Rates = rate_calc(K, HSC, Conc)
 
 
 #%% plot the rates for all grids
@@ -71,7 +78,7 @@ for g in range(0,ngrids):
     plt.plot(np.arange(0,ntimepoint), Rates[g, :, 1])
 
 #%% for a certain layer
-layer = layer = 2
+layer = 6
 i_start = (nz - layer) * nx * ny
 i_end = i_start + nx * ny
 
@@ -81,8 +88,8 @@ for g in range(i_start, i_end):
 
 #%% plot heat maps for reaction rates
 t = 30       #specify the time point
-reac = 0     #specify which reaction to plot
-layer = 5        #specify which layer, layer 1 is the top layer
+reac = 1     #specify which reaction to plot
+layer = 6        #specify which layer, layer 1 is the top layer
 i_start = (nz - layer) * nx * ny
 i_end = i_start + nx * ny
 
@@ -92,7 +99,7 @@ B = np.flipud(A)   #flip upside down the matrix so that the grids with smaller y
                    #same as in the field
 plt.imshow(B, cmap ="Reds")
 plt.colorbar()
-plt.title(K_df.columns[reac])
+plt.title(K_df.columns[reac] + ' (mol L-1 s-1)')
 
 
 

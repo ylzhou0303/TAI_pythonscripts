@@ -11,7 +11,7 @@ Created on Tue Jan  3 16:08:31 2023
 # Next subtract the actual CH4 amount from that, the difference is the flux
 
 #%% 
-Depths = [0.25, 0.1, 0.1, 0.1, 0.075, 0.075]  #depths of each layer
+Depths = [0.25, 0.2, 0.1, 0.075, 0.05, 0.015, 0.005, 0.003, 0.0020]  #depths of each layer
 Area = 0.01 * 0.01    #area of each grid
 Porosity = 0.8
 
