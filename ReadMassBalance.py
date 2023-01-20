@@ -19,7 +19,7 @@ with open(file_name,'r') as inputFile:
    
 variable_str = read_lines[0] #read in the 1nd line, getting variable names as strings
 variable_list = variable_str.replace('"','').replace('\n','').split(',')
-variable_list_cor = variable_list[0:7] + variable_list[8:]
+variable_list_cor = variable_list[0:7] + variable_list[8:]   #the 7th variable is always missing in the mass balance file
 
 
 #step 2: extract the numbers

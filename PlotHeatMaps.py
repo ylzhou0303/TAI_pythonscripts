@@ -17,7 +17,7 @@ ny = 10
 nz = 9
 
 
-var = 5
+var = 1
 var_str = Var_str[var]
 layer = 6
 i_start = (nz - layer) * nx * ny
@@ -31,8 +31,8 @@ plt.imshow(B, cmap ="Reds")
 ax = plt.gca()
 ax.grid(color='red', linestyle='-.', linewidth=0)
 plt.colorbar()
-plt.title("O2 saturation (%)")
-plt.title(var_str[0:len(var_str) - 4] + ' uM')
+#plt.title("O2 saturation (%)")
+#plt.title(var_str[0:len(var_str) - 4] + ' uM')
 
 #%% compare the concentration between different grids
 plt.bar(list(range(0, nx*ny)), M, color = 'skyblue', width = 0.4)

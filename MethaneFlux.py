@@ -22,7 +22,7 @@ for z in range(0,nz):  #calculate for all grids for each layer, one layer by one
     i_end = (nx * ny) * (z + 1)
     Volume = Area * Depths[z]   #volume of each grid at this layer, unit:m3
     
-    #calculate the amount of methane in theory if no outgassing
+    #calculate the amount of methane in theory if no outgassing (no ebullition and no diffusion out)
     MetGen = Rates[i_start:i_end,:,1] * 3600 * 24 * 1e3 * Volume * Porosity  #calculate the amount of methane produced , unit: mol (the unit of rate is mol L-1 s-1)
     MetOxi = Rates[i_start:i_end,:,2] *3600 * 24 * 1e3 * Volume  * Porosity
     MetThry[:,:,z] = MetGen - MetOxi      
@@ -37,7 +37,7 @@ MetActl_col = MetAmt_col[:,1:ntimepoint] - MetAmt_col[:,0:ntimepoint-1]   #the a
 
 
 
-#%% Step 2: calculate the difference between the amount of CH4 
+#%% Step 2: calculate the difference between the theoretical and actual amount of CH4 
 
 #calculate the difference, which would be how much of CH4 was out
 MetFlux = MetThry_col[:,0:ntimepoint-1] - MetActl_col   #unit: mol d-1
@@ -63,7 +63,7 @@ MetThry_sum = sum(MetThry_col[:,t])    #total amount of CH4 produced within one 
 MetActl_sum = sum(MetActl_col[:,t])    #total amount of CH4 produced within one day calculated from PFLOTRAN
 
 MetLoss = MetThry_sum - MetActl_sum   #total methane loss, including diffusion via sed_air-interface and ebullition
-MetLoss_rate = MetLoss / 0.01          #methane loss rate, unit: mol/m2/day
+MetLoss_rate = MetLoss / 0.01          #methane loss rate, unit: mol/m2/day, 0.01 is the domain area
 
 
 
@@ -75,8 +75,8 @@ Y = MetFlux2[:,t]
 plt.plot(X,Y, 'ro')
 #plt.plot([0,50], [0.016,0], 'b-')
 joey = np.arange(0,50,1)
-yung = 0.00000735 * joey * joey - 0.00066 * joey + 0.0158
-plt.plot(joey,yung,'b--')
+#yung = 0.00000735 * joey * joey - 0.00066 * joey + 0.0158
+#plt.plot(joey,yung,'b--')
 plt.xlabel('O2 %sat')
 plt.ylabel('CH4 flux(mol m-2 d-1)')
 

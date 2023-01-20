@@ -90,12 +90,12 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 2 #specify which variable to plot
+var_id = 1 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
 
-for i in range(0,30,1):
+for i in range(0,ntimepoint,1):
     conc = Full_Data[61 : ngrids : interval, i, var_id] / 2.5e-4 * 100
     plt.plot(conc, depths)
     
@@ -123,7 +123,7 @@ ncols = nx * ny
 t = 30
 
 for i in range(0, ncols):
-    conc = Full_Data[i:ngrids:ncols, t, var_id] / 2.5e-4 * 100
+    conc = Full_Data[i:ngrids:ncols, t, var_id] * 1e6
     plt.plot(conc, depths)
     
 plt.xlabel(var_str[0:len(var_str) - 4] + ' uM')
@@ -150,9 +150,9 @@ plt.rcParams.update({'font.size': 12})
 
 
 #%% save data
-filename = 'OxyHomo.pickle'
+filename = 'OxyHet.pickle'
 with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Marsh Interior/' + filename, 'wb') as handle:
-    pickle.dump([MeanProfs, Full_Data, depths, variable_list_cor, mass_bal], handle)
+    pickle.dump([Full_Data, depths, variable_list_cor, mass_bal], handle)
 
 
 #%% import field data
@@ -174,30 +174,49 @@ with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + 
 plt.rcParams.update({'font.size': 15})
 fig, ax = plt.subplots()
 
-var_id = 5
+var_id = 1
 var_str = Var_str[var_id]
 t = 30
+
+for i in range(0, ncols):
+    conc = Data_oxyhet[i:ngrids:ncols, t, var_id] / 2.5e-6
+    plt.plot(conc, depths,color = 'skyblue', linestyle = '-')
+
+plt.plot(conc,depths, color = 'skyblue', linestyle = '-', label = 'O2 het, each column')
+
 # calculate and plot mean profiles
 MeanProfs = []
 for z in range(0,nz):
     i_start = nx * ny * z
     i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Full_Data_roots[i_start:i_end, :, var_id] , axis = 0)
+    temp_mean = np.mean(Data_oxyhet[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
-MeanProfs = np.array(MeanProfs) * 1e6
-plt.plot(MeanProfs[:,t], depths, 'k-', label = '20 roots')
+MeanProfs = np.array(MeanProfs) / 2.5e-6
+plt.plot(MeanProfs[:,t], depths, 'r-', label = 'O2 heterogeneity')
 
 
 MeanProfs = []
 for z in range(0,nz):
     i_start = nx * ny * z
     i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Full_Data[i_start:i_end, :, var_id] , axis = 0)
+    temp_mean = np.mean(Data_oxyhomo[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
-MeanProfs = np.array(MeanProfs) * 1e6
-plt.plot(MeanProfs[:,t], depths, 'k--', label = 'O2 input homogeneity')
+MeanProfs = np.array(MeanProfs) / 2.5e-6
+plt.plot(MeanProfs[:,t], depths, 'b-', label = 'O2 homogeneity')
+
+
+
+MeanProfs = []
+for z in range(0,nz):
+    i_start = nx * ny * z
+    i_end = nx * ny * (z + 1)
+    temp_mean = np.mean(Data_noROL[i_start:i_end, :, var_id] , axis = 0)
+    MeanProfs.append(temp_mean)
+
+MeanProfs = np.array(MeanProfs) / 2.5e-6
+plt.plot(MeanProfs[:,t], depths, 'k-', label = 'no ROL')
 plt.legend(loc = 0)
 
 plt.xlabel(var_str[0:len(var_str)-4] + ' uM')
