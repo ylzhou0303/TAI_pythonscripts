@@ -85,9 +85,15 @@ rate = K[0,reac] * Conc[grid,t,0] / (HSC[0,reac] + Conc[grid,t,0])  *  Conc[grid
 
 print(rate - Rates[grid,t,reac])
 
-#%% plot the rates for all grids
-for g in range(0,ngrids):
-    plt.plot(np.arange(0,ntimepoint), Rates[g, :, 1])
+#%% plot depth profiles of the rates for all columns
+reac = 0
+for i in range(0, ncols):
+    rate = Rates[i:ngrids:ncols, t, reac]
+    plt.plot(rate, depths)
+    
+plt.title(K_df.columns[reac] + ' (mol L-1 s-1)')    
+plt.xlabel('rate (mol L-1 s-1)')
+plt.ylabel('Depth(m)')
 
 #%% for a certain layer
 layer = 6
@@ -144,10 +150,14 @@ plt.plot(x, y, 'b-')
 
 
 #real reaction rate based on concentrations
-x = Full_Data[:,30,3]
-monod = x / (x + 2e-3)
-y = K[0,reac] * monod
-plt.plot(x, y, 'ko')
+t = 30
+x = Full_Data[:,t,3]   #concentration of DOM
+y = Rates[:,t,reac]
+plt.plot(x, y, 'ko',label = 'rate inside each grid')
+
+plt.xlabel('DOM mol L-1')
+plt.ylabel('Methanogenesis rate (mol L-1 s-1)')
+plt.legend(loc = 0)
 
 #%% Methane production, I keep this section to verify the results calculated above
 k = 9e-10

@@ -90,13 +90,13 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 1 #specify which variable to plot
+var_id = 2 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
 
 for i in range(0,ntimepoint,1):
-    conc = Full_Data[61 : ngrids : interval, i, var_id] / 2.5e-4 * 100
+    conc = Full_Data[61 : ngrids : interval, i, var_id] * 1e6
     plt.plot(conc, depths)
     
 
@@ -162,7 +162,7 @@ FieldData = pandas.read_csv('C:\MBL\Research\PFLOTRAN DATA\pflotran outputs\OxyH
 
 
 #%% import the processed pflotran output
-import pickle
+import pickle 
 filename = 'growing_season.pickle'
 with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + filename, 'rb') as handle:
     Growing_Season_CB = pickle.load(handle)
@@ -174,15 +174,15 @@ with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + 
 plt.rcParams.update({'font.size': 15})
 fig, ax = plt.subplots()
 
-var_id = 1
+var_id = 5
 var_str = Var_str[var_id]
 t = 30
+conv = 1e6  #convert units
+# for i in range(0, ncols):
+#     conc = Data_oxyhet[i:ngrids:ncols, t, var_id] * conv
+#     plt.plot(conc, depths,color = 'skyblue', linestyle = '-')
 
-for i in range(0, ncols):
-    conc = Data_oxyhet[i:ngrids:ncols, t, var_id] / 2.5e-6
-    plt.plot(conc, depths,color = 'skyblue', linestyle = '-')
-
-plt.plot(conc,depths, color = 'skyblue', linestyle = '-', label = 'O2 het, each column')
+# plt.plot(conc,depths, color = 'skyblue', linestyle = '-', label = 'O2 het, each column')
 
 # calculate and plot mean profiles
 MeanProfs = []
@@ -192,7 +192,7 @@ for z in range(0,nz):
     temp_mean = np.mean(Data_oxyhet[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
-MeanProfs = np.array(MeanProfs) / 2.5e-6
+MeanProfs = np.array(MeanProfs) * conv
 plt.plot(MeanProfs[:,t], depths, 'r-', label = 'O2 heterogeneity')
 
 
@@ -203,7 +203,7 @@ for z in range(0,nz):
     temp_mean = np.mean(Data_oxyhomo[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
-MeanProfs = np.array(MeanProfs) / 2.5e-6
+MeanProfs = np.array(MeanProfs) * conv
 plt.plot(MeanProfs[:,t], depths, 'b-', label = 'O2 homogeneity')
 
 
@@ -215,11 +215,12 @@ for z in range(0,nz):
     temp_mean = np.mean(Data_noROL[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
-MeanProfs = np.array(MeanProfs) / 2.5e-6
+MeanProfs = np.array(MeanProfs) * conv
 plt.plot(MeanProfs[:,t], depths, 'k-', label = 'no ROL')
 plt.legend(loc = 0)
 
 plt.xlabel(var_str[0:len(var_str)-4] + ' uM')
+#plt.xlabel('%O2 sat')
 plt.ylabel('Depths(m)')
 
 
@@ -410,3 +411,50 @@ ax.set_ylim(-0.1, 4.2)
 
 #%% Draw the discretization of the model along depths
 plt.plot(np.ones(len(depths)), depths, 'ko')
+
+
+
+#%% relationship between %O2 sat and other variables
+layer = 6
+i_start = (nz - layer) * nx * ny
+i_end = i_start + nx * ny
+t = 30
+
+oxy_conc = Full_Data[i_start:i_end, t, 1] / 2.5e-4 * 100
+ch4_conc = Full_Data[i_start:i_end, t, 3] * 1e6
+plt.plot(oxy_conc, ch4_conc, 'ro')
+plt.xlabel('%O2 sat')
+plt.ylabel ('DOM umol L-1')
+
+
+#%%
+dom_conc = Full_Data[i_start:i_end, t, 3] * 1e6
+ch4_conc = Full_Data[i_start:i_end, t, 2] * 1e6
+plt.plot([1500, 3000],[500,1000],'k-')
+plt.plot(dom_conc, ch4_conc, 'ro')
+
+plt.xlabel('DOM umol L-1')
+plt.ylabel ('CH4 (aq) umol L-1')
+
+#%% plot CH4 vs DOM only for samples with low O2
+# dig out the row numbers for grids with low O2, lower than 20% sat
+LowOxyList = [];
+for i in range(i_start, i_end):
+    if Full_Data[i,t,1] < (20 / 100 * 2.5e-4):
+        LowOxyList.append(i)
+
+LowOxyList = np.array(LowOxyList)        
+plt.plot(Full_Data[LowOxyList,t,1], 'ko')
+
+
+#%% plot CH4 vs DOM
+x = Full_Data[LowOxyList,t,1] / 2.5e-4 * 100
+y = Full_Data[LowOxyList,t,3] * 1e6
+plt.plot(x, y, 'ko')
+plt.xlabel('DOM umol/L')
+plt.ylabel('CH4 umol/L')
+
+#%% CH4 concentration vs methane oxidation rate
+x = Rates[i_start:i_end, t, 1]
+y = ch4_conc
+plt.plot(x, y, 'ro')
