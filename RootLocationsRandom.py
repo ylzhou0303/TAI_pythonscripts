@@ -29,7 +29,7 @@ i = 0
 
 while 0 in RootGrids:
     r = random.randint(0, nx*ny -1 )
-    if r not in RootGrids:
+    if r not in RootGrids:    #to avoid repeatition
         RootGrids[i] = r
         i = i + 1
 

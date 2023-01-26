@@ -18,7 +18,8 @@ Tstd = 273
 R = 8.314
 
 Press = Press_atm + rho * g * H
-Hcp = 1.4e-5 * np.exp(-1900*(1/T - 1/T0))
+#Hcp = 1.4e-5 * np.exp(-1900*(1/T - 1/T0))  #CH4
+Hcp = 1e-3 * np.exp(-2100*(1/T - 1/T0))    #sulfide
 alpha = Hcp * Tstd * R
 Eclim = Press * alpha / (R * T *1000)
 

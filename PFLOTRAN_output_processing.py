@@ -95,8 +95,13 @@ var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
 
+if var_id == 1:
+    conv = 1/2.5e-4*100
+else:
+    conv = 1e6
+
 for i in range(0,ntimepoint,1):
-    conc = Full_Data[61 : ngrids : interval, i, var_id] * 1e6
+    conc = Full_Data[61 : ngrids : interval, i, var_id] * conv
     plt.plot(conc, depths)
     
 
