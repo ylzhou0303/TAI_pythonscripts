@@ -48,16 +48,28 @@ HSC_df.index = ['Monod_o2', 'Monod_ch4', 'Monod_dom', 'Monod_so4', 'Monod_h2s']
 # reaction, I set it to be 0
 HSC = np.array(HSC_df)
 
+# 3. data frame for monod inhibition constants
+I_df = {'DOMAer': [np.nan, np.nan, np.nan, np.nan, np.nan],
+          'Met': [1e-4, np.nan, np.nan, np.nan, np.nan],
+          'MetOxi':[np.nan, np.nan, np.nan, np.nan, np.nan],
+          'SulRed': [np.nan, np.nan, np.nan, np.nan, np.nan],
+          'SulOxi': [np.nan, np.nan, np.nan, np.nan, np.nan]}   # half saturation constants for monod inhibition, I = inhb/(inhb + conc)
+
+I_df = pd.DataFrame(I_df)
+I_df.index = ['Monod_o2', 'Monod_ch4', 'Monod_dom', 'Monod_so4', 'Monod_h2s']
+I = np.array(I_df)
+
 
 #%% This function calculates the actual reaction rates based on the maximum reaction rates, monod constants, and concentrations
 nreac = 5
 nspecies = 5
 
-def rate_calc(K, HSC, Conc):
+def rate_calc(K, HSC, I, Conc):
     Rates = np.zeros(shape = (ngrids, ntimepoint, nreac), dtype = np.float32)
     
     for n in range(0,nreac):                      #calculate the rates for each reaction one by one                
         Monod = np.ones(shape = (ngrids, ntimepoint))  #init a Monod matrix for accumulative multiplication of the monod terms 
+        Inhb = np.ones(shape = (ngrids, ntimepoint))  #init a  matrix for accumulative multiplication of the inhibition terms 
         
         for j in range(0,nspecies):
             hsc = HSC[j,n]
@@ -65,7 +77,13 @@ def rate_calc(K, HSC, Conc):
                 monod_temp = Conc[:,:,j] / (Conc[:,:,j] + hsc)   #use the concentration matrix of this species times the half saturation constant
                 Monod = Monod * monod_temp
         
-        Rates[:,:,n] = K[0,n] * Monod             #save the rate for this timepoint and this reaction, then go into the next loop, i.e. next timepoint    
+        for j in range(0,nspecies):
+            inhb = I[j,n]
+            if not np.isnan(inhb):             #if the inhb is not NAN, it means that the reaction rate is dependent on this species
+                inhb_temp = inhb / (Conc[:,:,j] + inhb)   #use the concentration matrix of this species times the half saturation constant
+                Inhb = Inhb * inhb_temp
+        
+        Rates[:,:,n] = K[0,n] * Monod * Inhb            #save the rate for this timepoint and this reaction, then go into the next loop, i.e. next timepoint    
     
     return Rates
         
@@ -73,17 +91,23 @@ def rate_calc(K, HSC, Conc):
             
 #%% calculate reaction rates for all reactions
 Conc = Full_Data[:,:,1:6]  #concentration of the five species investigated
-Rates = rate_calc(K, HSC, Conc)
+Rates = rate_calc(K, HSC, I, Conc)
 
 
 #%% verify the rates calculation
-reac = 0
-grid = 178
+reac = 1
+grid = 100
 t = 6
 
-rate = K[0,reac] * Conc[grid,t,0] / (HSC[0,reac] + Conc[grid,t,0])  *  Conc[grid, t, 2] / (HSC[2,reac] + Conc[grid, t, 2])
+oxygen = Full_Data[grid,t,1]
+dom = Full_Data[grid,t,3]
+monod = HSC[2,1]
+inhb = I[0,1]
 
-print(rate - Rates[grid,t,reac])
+
+rate = K[0,reac] *    dom / (monod + dom)    *    inhb/(inhb + oxygen)
+
+print((rate - Rates[grid,t,reac])/rate)
 
 #%% plot depth profiles of the rates for all columns
 reac = 0
@@ -142,20 +166,25 @@ plt.title(K_df.columns[reac])
 
 #%% plot concentration vs reaction rate
 reac = 1
+t = 30
 
-x = np.arange(2e-5, 2e-2, 1e-6)
-monod = x / (x + 2e-3)
-y = K[0, reac] * monod
-plt.plot(x, y, 'b-')
+dom_range = np.arange(0,0.02,0.001)
+monod = dom_range / (dom_range + 2e-3)
+
+oxy_range = np.arange(0,2.5e-4,1e-5)
+inhb = 1e-4 / (1e-4 + oxy_range)
+
+
+y = K[0, reac] * inhb
+plt.plot(oxy_range, y, 'b-')
 
 
 #real reaction rate based on concentrations
-t = 30
-x = Full_Data[:,t,3]   #concentration of DOM
+x = Data_oxyhet[:,t,1]   #concentration of DOM
 y = Rates[:,t,reac]
 plt.plot(x, y, 'ko',label = 'rate inside each grid')
 
-plt.xlabel('DOM mol L-1')
+plt.xlabel('O2 mol L-1')
 plt.ylabel('Methanogenesis rate (mol L-1 s-1)')
 plt.legend(loc = 0)
 
@@ -240,3 +269,26 @@ plt.rcParams.update({'font.size': 12})
 # time = 3600 *24 * 7
 # c_0 = 6e-4
 # c_t = c_0 + (rate_2[75]) * time
+
+
+#%% compare the modeled reaction rates with the meaured rates from literatures
+
+#measured reaction rates from literatures, units: mol L-1 porewater s-1
+R_df = {'DOMAer': [1e-8], 'Met': [9e-11], 'MetOxi': [1.6e-10], 'SulRed': [2.26e-9],'SulOxi': [1.6e-10]}
+R_df = pd.DataFrame(R_df)
+R = np.array(R_df)
+
+
+
+t = 30       #specify the point time
+reac = 1     #specify the reaction 
+layer = 6        #specify which layer, layer 1 is the top layer
+i_start = (nz - layer) * nx * ny
+i_end = i_start + nx * ny
+
+plt.bar(np.arange(1,101,1),Rates[i_start:i_end,t,reac])
+plt.bar(101, R[0, reac], width = 0.8, color = 'r')
+
+
+#%%
+plt.plot(np.arange(1,901,1),Rates[:,t,reac], 'ro')

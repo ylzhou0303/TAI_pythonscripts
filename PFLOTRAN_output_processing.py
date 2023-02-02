@@ -6,6 +6,7 @@ Created on Wed Jul 20 14:52:04 2022
 """
 
 # This file compiles model output at all different time points
+# and plot the mean concentration profiles of different model set up
 
 from contextlib import AsyncExitStack
 #from socket import AF_X25
@@ -32,7 +33,7 @@ ntimepoint = 31
 nvars = 7;  #number of variables that I want to investigate
 Full_Data = np.empty( shape = (ngrids,ntimepoint,nvars), dtype = np.float32)
 Var_str = {0: 'Liquid Saturation', 1: 'Total O2(aq) [M]', 2: 'Total CH4(aq) [M]', 3: 'Total DOM1 [M]', 4: 'Total SO4-- [M]',
-           5: 'Total H2S(aq) [M]', 6: 'Total Tracer [M]'}
+           5: 'Total H2S(aq) [M]', 6: 'Total Tracer2 [M]'}
 # the dictionary in which the variable ID is coupled with the variable name
 
 
@@ -90,7 +91,7 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 2 #specify which variable to plot
+var_id = 1 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
@@ -100,18 +101,17 @@ if var_id == 1:
 else:
     conv = 1e6
 
+plt.rcParams.update({'font.size': 15})
+
 for i in range(0,ntimepoint,1):
     conc = Full_Data[61 : ngrids : interval, i, var_id] * conv
     plt.plot(conc, depths)
     
-
-ax=plt.gca()
-ax.set_xlabel(var_str)
-#ax.set_xlabel('CH4 (aq) umol L-1')
-ax.set_ylabel('Soil Depth (m)')
+plt.ylabel('Soil Depth (m)')
+plt.xlabel(var_str[0:len(var_str)-4] + ' uM')
+plt.xlabel('%O2 sat')
 #plt.xticks(np.arange(0, 2e-4, step = 5e-5))   
 #plt.xticks(np.arange(5.8e-4, 6.2e-4, step = 1e-5)) 
-plt.rcParams.update({'font.size': 12})
 # plt.ylim(-0.02,0)
 # plt.xlim(0,50)
 
@@ -179,10 +179,14 @@ with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + 
 plt.rcParams.update({'font.size': 15})
 fig, ax = plt.subplots()
 
-var_id = 5
+var_id = 2
 var_str = Var_str[var_id]
 t = 30
-conv = 1e6  #convert units
+
+if var_id == 1:
+    conv = 1/2.5e-4*100
+else:
+    conv = 1e6
 # for i in range(0, ncols):
 #     conc = Data_oxyhet[i:ngrids:ncols, t, var_id] * conv
 #     plt.plot(conc, depths,color = 'skyblue', linestyle = '-')
@@ -194,11 +198,12 @@ MeanProfs = []
 for z in range(0,nz):
     i_start = nx * ny * z
     i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_oxyhet[i_start:i_end, :, var_id] , axis = 0)
+    temp_mean = np.mean(Data_noROL[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
 MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[:,t], depths, 'r-', label = 'O2 heterogeneity')
+plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color ='#303030', label = 'no ROL')  #convert depth to cm
+
 
 
 MeanProfs = []
@@ -209,26 +214,39 @@ for z in range(0,nz):
     MeanProfs.append(temp_mean)
 
 MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[:,t], depths, 'b-', label = 'O2 homogeneity')
-
+plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#24AEDB', label = 'O2 homogeneity')
 
 
 MeanProfs = []
 for z in range(0,nz):
     i_start = nx * ny * z
     i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_noROL[i_start:i_end, :, var_id] , axis = 0)
+    temp_mean = np.mean(Data_oxyhet[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
 MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[:,t], depths, 'k-', label = 'no ROL')
-plt.legend(loc = 0)
-
-plt.xlabel(var_str[0:len(var_str)-4] + ' uM')
-#plt.xlabel('%O2 sat')
-plt.ylabel('Depths(m)')
+plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#D02F5E', label = 'O2 heterogeneity')
 
 
+subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
+
+#plt.legend(loc = 0)
+#plt.xlabel(var_str[6:len(var_str)-4] + ' (μM)')
+#plt.xlabel('O2 saturation (%)')
+#plt.xlabel('SO4'.translate(subscript) + '2-(μM)'.translate(superscript))
+#plt.xlabel('CH4(μM)'.translate(subscript))
+#plt.xlabel('DOC (μM)')
+plt.xlabel('H2S(aq) (μM)'.translate(subscript))
+plt.ylabel('Depth(cm)')
+
+
+
+#%% save plot
+fn = r'C:\MBL\Research\Oxy Het MS\Figures\MeanProfs\oxygen.eps'
+fig.savefig(fn, format='eps')
+
+#%%
 # # # field data
 # # Conc = np.array(FieldData['Sulfide'])
 # # depths = -np.array(FieldData['Depth']) * 1e-2

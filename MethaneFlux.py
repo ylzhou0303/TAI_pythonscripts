@@ -11,7 +11,7 @@ Created on Tue Jan  3 16:08:31 2023
 # Next subtract the actual CH4 amount from that, the difference is the flux
 
 #%% 
-Depths = [0.25, 0.2, 0.1, 0.075, 0.05, 0.015, 0.005, 0.003, 0.0020]  #depths of each layer
+Depths = np.array([0.25, 0.2, 0.1, 0.075, 0.05, 0.015, 0.005, 0.003, 0.0020])  #depths of each layer
 Area = 0.01 * 0.01    #area of each grid
 Porosity = 0.8
 
@@ -66,15 +66,60 @@ MetLoss = MetThry_sum - MetActl_sum   #total methane loss, including diffusion v
 MetLoss_rate = MetLoss / 0.01          #methane loss rate, unit: mol/m2/day, 0.01 is the domain area
 
 
+#%% plot the theoretical profile (no outgassing) vs the actual profile
+# for day 29, the mean profile of theoretical increase in CH4 is
+t = 29
+MetThry_inc = np.mean(MetThry, axis = 0)[29,:] / (Depths * 0.0001 * Porosity * 1e3)   #calculate the mean profile and convert to mol/L
 
+#calculate the mean actual profile
+var_id = 2
+MeanProfs = []
+for z in range(0,nz):
+    i_start = nx * ny * z
+    i_end = nx * ny * (z + 1)
+    temp_mean = np.mean(Full_Data[i_start:i_end, :, var_id] , axis = 0)
+    MeanProfs.append(temp_mean)
+
+MeanProfs = np.array(MeanProfs)
+
+
+MetThry_prof = MeanProfs[:,29] + MetThry_inc   #the theoretical profile of day30 is the actual profile on day29 plus the increase in CH4 per day
+
+
+plt.plot(MetThry_prof, depths, 'k--')
+plt.plot(MeanProfs[:,29], depths, 'r-')
+plt.plot(MeanProfs[:,30], depths, 'k-')
+
+
+#%% A second way to calculate the methane outflux
+# I used a Tracer2 in PFLOTRAN to trace the balance between CH4 productin and oxidation
+# So the concentration change of Tracer2 within 1 day is how much of CH4 changes if there is no outgassing
+# The difference between that and the actual change of CH4 within 1 day is the outflux
+
+# find out which column in the mass balance file is Tracer2
+Tracer2_global_i = 9
+Tracer2_bc_i = 26
+Met_global_i = 10
+
+#increase in Tracer2 in the modeled soil column
+Tracer2_inc = (Mass[29,Tracer2_global_i] - Mass[28,Tracer2_global_i]) - Mass[28,Tracer2_bc_i]
+#because the boundary condition conc. for Tracer2 had to be set up, some Tracer2 was taken out through the sed_air_interface, we need to add that back
+
+#the actual methane change calculated by PFLOTRAN
+Met_inc = Mass[29,Met_global_i] - Mass[28,Met_global_i]
+
+#the difference would be the outflux of CH4
+MetLoss_rate2 = (Tracer2_inc - Met_inc) / 0.01   #mol/m2/day
 
 #%% relationship between O2 and CH4 flux
 t = 29
-X = Full_Data[i_start:i_end,t,1] / 2.5e-4 *100
+X = Full_Data[300:400,t,1] / 2.5e-4 *100
 Y = MetFlux2[:,t]
+
+plt.rcParams.update({'font.size': 14})
 plt.plot(X,Y, 'ro')
 #plt.plot([0,50], [0.016,0], 'b-')
-joey = np.arange(0,50,1)
+#joey = np.arange(0,50,1)
 #yung = 0.00000735 * joey * joey - 0.00066 * joey + 0.0158
 #plt.plot(joey,yung,'b--')
 plt.xlabel('O2 %sat')
