@@ -17,7 +17,7 @@ ny = 10
 nz = 9
 
 
-var_id = 4
+var_id = 1
 var_str = Var_str[var_id]
 layer = 6
 i_start = (nz - layer) * nx * ny
@@ -36,7 +36,7 @@ B = np.flipud(A)   #flip upside down the matrix so that the grids with smaller y
 plt.rcParams.update({'font.size': 12})
 plt.imshow(B, cmap ="plasma")
 plt.xticks(ticks = np.arange(0,10), labels = np.arange(1,11))
-plt.yticks(ticks = np.arange(0,10), labels = np.arange(1,11))
+plt.yticks(ticks = np.arange(0,10), labels = np.arange(10,0,-1))
 plt.xlabel('X coordinate (cm)')
 plt.ylabel('Y coordinate (cm)')
 cbar = plt.colorbar()
@@ -47,8 +47,8 @@ cbar = plt.colorbar()
 subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
 #plt.title(var_str[6:len(var_str)-4] + ' (μM)')
-#plt.title('O2 saturation (%)')
-plt.title('SO4'.translate(subscript) + '2-(μM)'.translate(superscript))
+plt.title('O2 saturation (%)')
+#plt.title('SO4'.translate(subscript) + '2-(μM)'.translate(superscript))
 #plt.title('CH4(μM)'.translate(subscript))
 #plt.title('DOC (μM)')
 #plt.title('H2S(aq) (μM)'.translate(subscript))

@@ -9,6 +9,7 @@ Created on Wed Jul 20 14:52:04 2022
 # and plot the mean concentration profiles of different model set up
 
 from contextlib import AsyncExitStack
+import pandas as pd
 #from socket import AF_X25
 import numpy as np
 import pickle
@@ -91,7 +92,7 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 1 #specify which variable to plot
+var_id = 5 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
@@ -104,12 +105,12 @@ else:
 plt.rcParams.update({'font.size': 15})
 
 for i in range(0,ntimepoint,1):
-    conc = Full_Data[61 : ngrids : interval, i, var_id] * conv
+    conc = Full_Data[26 : ngrids : interval, i, var_id] * conv
     plt.plot(conc, depths)
     
 plt.ylabel('Soil Depth (m)')
 plt.xlabel(var_str[0:len(var_str)-4] + ' uM')
-plt.xlabel('%O2 sat')
+#plt.xlabel('%O2 sat')
 #plt.xticks(np.arange(0, 2e-4, step = 5e-5))   
 #plt.xticks(np.arange(5.8e-4, 6.2e-4, step = 1e-5)) 
 # plt.ylim(-0.02,0)
@@ -117,7 +118,7 @@ plt.xlabel('%O2 sat')
 
 #%% plot the time series of the variable
 
-plt.plot(Full_Data[243, :, var_id])   #bigger row number means closer to the soil surface
+plt.plot(Full_Data[326, :, var_id])   #bigger row number means closer to the soil surface
 ax=plt.gca()
 ax.set_xlabel('Time (day)')
 ax.set_ylabel(var_str)
@@ -179,7 +180,7 @@ with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + 
 plt.rcParams.update({'font.size': 15})
 fig, ax = plt.subplots()
 
-var_id = 2
+var_id = 5
 var_str = Var_str[var_id]
 t = 30
 

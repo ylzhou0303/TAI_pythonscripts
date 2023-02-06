@@ -7,7 +7,7 @@ Created on Tue Nov  1 12:16:00 2022
 
 
 
-#%% This file calculates the reaction rates along the modeling period
+#%% This file calculates the reaction rates for each grid along the modeling period
 from contextlib import AsyncExitStack
 #from socket import AF_X25
 from functools import reduce
@@ -28,7 +28,7 @@ import scipy.io
 
 
 # 1. data frame for maximum reaction rate constants
-K_df = {'DOMAer': [5e-8], 'Met': [1e-9], 'MetOxi': [5e-9], 'SulRed': [1e-8],'SulOxi': [5e-9]}
+K_df = {'DOMAer': [5e-8], 'Met': [1e-9], 'MetOxi': [5e-9], 'SulRed': [5e-9],'SulOxi': [1e-7]}
 K_df = pd.DataFrame(K_df)
 K = np.array(K_df)
 
@@ -60,6 +60,8 @@ I_df.index = ['Monod_o2', 'Monod_ch4', 'Monod_dom', 'Monod_so4', 'Monod_h2s']
 I = np.array(I_df)
 
 
+
+
 #%% This function calculates the actual reaction rates based on the maximum reaction rates, monod constants, and concentrations
 nreac = 5
 nspecies = 5
@@ -83,8 +85,8 @@ def rate_calc(K, HSC, I, Conc):
                 inhb_temp = inhb / (Conc[:,:,j] + inhb)   #use the concentration matrix of this species times the half saturation constant
                 Inhb = Inhb * inhb_temp
         
-        Rates[:,:,n] = K[0,n] * Monod * Inhb            #save the rate for this timepoint and this reaction, then go into the next loop, i.e. next timepoint    
-    
+        Rates[:,:,n] = K[0,n] * Monod #* Inhb            #save the rate for this timepoint and this reaction, then go into the next loop, i.e. next timepoint    
+                                                        #if not considering Inhibition, the inhibition terms needs to be turned off
     return Rates
         
             

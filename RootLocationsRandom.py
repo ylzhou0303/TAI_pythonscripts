@@ -24,14 +24,17 @@ for i in range(0,ny):
 
 
 #%% Generate random numbers for the ID of the grids containing root
-RootGrids = np.zeros(shape = (nroots), dtype = np.int0)
+RootGrids = [np.nan] * 20
+EdgeGrids = [0,1,2,3,4,5,6,7,8,9,10,20,30,40,50,60,70,80,90,91,92,93,94,95,96,97,98,99,89,79,69,59,49,39,29,19]
 i = 0
 
-while 0 in RootGrids:
-    r = random.randint(0, nx*ny -1 )
-    if r not in RootGrids:    #to avoid repeatition
-        RootGrids[i] = r
-        i = i + 1
+while np.nan in RootGrids:
+    r = random.randint(0, nx*ny-1)
+    if (r not in RootGrids):
+        if r not in EdgeGrids:
+        #to avoid repeatition, and to avoid roots being at the edge (because the roots at the edge cannot exchange with the neighboring grid, which is unrealistic)
+            RootGrids[i] = r
+            i = i + 1
 
 #%% find out the coordinates of these grids with roots  
 X = XCoords.reshape((nx*ny))
@@ -56,4 +59,5 @@ for i in range(nroots):
                 + '\n\t/\n\tFACE TOP\nEND')
                 
     Strs = Strs + '\n\n' + temp_str
+
 

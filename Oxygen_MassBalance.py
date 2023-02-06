@@ -9,7 +9,7 @@ Created on Thu Feb  2 15:18:04 2023
 # to investigate the balance of O2 supply and consumption
 
 fluid_rate = 0.05e-8           # flow rate of O2 injection, m3/hr
-fluid_conc = 0.7               # concentration of O2, mol/L
+fluid_conc = 1.2               # concentration of O2, mol/L
 
 Oxy_in = fluid_rate / 3600 * (fluid_conc * 1e3)  #oxygen input rate to the root cell, mol s-1
 
@@ -29,9 +29,18 @@ Oxy_inc = (Full_Data[cell_id,t,1] - Full_Data[cell_id,t-1,1]) * 1e3 * cell_vol /
 
 
 #%% calculate the diffusion, J = -D*(dc/dx)
+#horizontal flux
 dc = (Full_Data[327,t,1] - Full_Data[326,t,1]) * 1e3 #difference in O2 concentration between the neighboring cells, unit:mol m-3
 dx = 0.01           #distance between the center point of the two cells, which is 1cm, unit:m
 D = 1.3e-9          #diffusion coefficient, unit: m2 s-1
-time = 3600 * 24       #the time interval between the two measurement time points, unit: s
 
-J = D*(dc/dx) / time     #flux through a unit surface per unit of time, unit:mol m-2 s-1
+J = -D * (dc/dx) * Porosity    #flux through a unit surface area per unit of time, unit:mol m-2 s-1
+Area = 0.01*0.075        #the area of the side of the cell
+Flux_horz = J * Area      #the horizontal flux of oxygen through one side of the cell, unit: mol s-1
+
+
+#the vertical flux
+dx = 0.075
+J = -D * (dc/dx) * Porosity
+Area = 0.01*0.01
+Flux_vert = J * Area
