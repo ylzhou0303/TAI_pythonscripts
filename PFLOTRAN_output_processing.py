@@ -92,7 +92,7 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 5 #specify which variable to plot
+var_id = 1 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
@@ -105,7 +105,7 @@ else:
 plt.rcParams.update({'font.size': 15})
 
 for i in range(0,ntimepoint,1):
-    conc = Full_Data[26 : ngrids : interval, i, var_id] * conv
+    conc = Full_Data[61 : ngrids : interval, i, var_id] * conv
     plt.plot(conc, depths)
     
 plt.ylabel('Soil Depth (m)')
@@ -180,7 +180,7 @@ with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + 
 plt.rcParams.update({'font.size': 15})
 fig, ax = plt.subplots()
 
-var_id = 5
+var_id = 2
 var_str = Var_str[var_id]
 t = 30
 

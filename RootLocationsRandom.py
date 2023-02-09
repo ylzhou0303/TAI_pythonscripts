@@ -10,7 +10,7 @@ import random
 import numpy as np
 nx = 10
 ny = 10
-nroots = 20
+nroots = 15
 
 #Define matrices of X and Y coordinates
 XCoords = np.zeros (shape = (nx,ny))
@@ -24,7 +24,7 @@ for i in range(0,ny):
 
 
 #%% Generate random numbers for the ID of the grids containing root
-RootGrids = [np.nan] * 20
+RootGrids = [np.nan] * nroots
 EdgeGrids = [0,1,2,3,4,5,6,7,8,9,10,20,30,40,50,60,70,80,90,91,92,93,94,95,96,97,98,99,89,79,69,59,49,39,29,19]
 i = 0
 

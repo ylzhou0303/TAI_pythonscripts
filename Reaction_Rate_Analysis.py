@@ -28,18 +28,18 @@ import scipy.io
 
 
 # 1. data frame for maximum reaction rate constants
-K_df = {'DOMAer': [5e-8], 'Met': [1e-9], 'MetOxi': [5e-9], 'SulRed': [5e-9],'SulOxi': [1e-7]}
+K_df = {'DOMAer': [2e-8], 'Met': [5e-10], 'MetOxi': [4e-9], 'SulRed': [5e-9],'SulOxi': [1e-7]}
 K_df = pd.DataFrame(K_df)
 K = np.array(K_df)
 
 
 
 # 2. data frame for monod half saturation constants
-HSC_df = {'DOMAer': [1e-4, np.nan, 2e-3, np.nan, np.nan],
+HSC_df = {'DOMAer': [1e-4, np.nan, 5e-3, np.nan, np.nan],
           'Met': [np.nan, np.nan, 2e-3, np.nan, np.nan],
           'MetOxi':[1e-4, 3e-4, np.nan, np.nan, np.nan],
           'SulRed': [np.nan, np.nan, 2e-3, 5e-3, np.nan],
-          'SulOxi': [1e-4, np.nan, np.nan, np.nan, 3e-4]}   #HSC: half saturation constant
+          'SulOxi': [1e-4, np.nan, np.nan, np.nan, 5e-4]}   #HSC: half saturation constant
 
 HSC_df = pd.DataFrame(HSC_df)
 HSC_df.index = ['Monod_o2', 'Monod_ch4', 'Monod_dom', 'Monod_so4', 'Monod_h2s']
@@ -98,8 +98,8 @@ Rates = rate_calc(K, HSC, I, Conc)
 
 #%% verify the rates calculation
 reac = 1
-grid = 100
-t = 6
+grid = 10
+t = 29
 
 oxygen = Full_Data[grid,t,1]
 dom = Full_Data[grid,t,3]
@@ -110,6 +110,19 @@ inhb = I[0,1]
 rate = K[0,reac] *    dom / (monod + dom)    *    inhb/(inhb + oxygen)
 
 print((rate - Rates[grid,t,reac])/rate)
+
+
+#%% compare rates of all reactions
+grid_id = 363
+t = 30
+
+for i in range(0,5):
+    plt.bar(i, Rates[grid_id,t,i], color = 'lightblue', width = 0.3)
+
+plt.xticks(np.arange(0,5), K_df.keys())
+plt.ylabel('Rate (umol L-1 s-1)')
+#plt.ylim(0,0.25e-8)
+
 
 #%% plot depth profiles of the rates for all columns
 reac = 0

@@ -47,11 +47,11 @@ cbar = plt.colorbar()
 subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
 #plt.title(var_str[6:len(var_str)-4] + ' (μM)')
-plt.title('O2 saturation (%)')
+#plt.title('O2 saturation (%)')
 #plt.title('SO4'.translate(subscript) + '2-(μM)'.translate(superscript))
 #plt.title('CH4(μM)'.translate(subscript))
 #plt.title('DOC (μM)')
-#plt.title('H2S(aq) (μM)'.translate(subscript))
+plt.title('H2S(aq) (μM)'.translate(subscript))
 
 # set more parameters for the axis
 # plt.tick_params(
