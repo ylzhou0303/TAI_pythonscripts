@@ -50,7 +50,7 @@ HSC = np.array(HSC_df)
 
 # 3. data frame for monod inhibition constants
 I_df = {'DOMAer': [np.nan, np.nan, np.nan, np.nan, np.nan],
-          'Met': [1e-4, np.nan, np.nan, np.nan, np.nan],
+          'Met': [1e-5, np.nan, np.nan, np.nan, np.nan],
           'MetOxi':[np.nan, np.nan, np.nan, np.nan, np.nan],
           'SulRed': [np.nan, np.nan, np.nan, np.nan, np.nan],
           'SulOxi': [np.nan, np.nan, np.nan, np.nan, np.nan]}   # half saturation constants for monod inhibition, I = inhb/(inhb + conc)
@@ -113,7 +113,7 @@ print((rate - Rates[grid,t,reac])/rate)
 
 
 #%% compare rates of all reactions
-grid_id = 363
+grid_id = 361
 t = 30
 
 for i in range(0,5):
@@ -307,3 +307,14 @@ plt.bar(101, R[0, reac], width = 0.8, color = 'r')
 
 #%%
 plt.plot(np.arange(1,901,1),Rates[:,t,reac], 'ro')
+
+
+
+#%%  reaction rate for the ebullition process
+
+V = 4e-7
+K = 1e-2
+c = np.arange(0,1.2e-3,1e-4)
+R = V*(c/(c+K))#*(c/(c+K))*(c/(c+K))#*(c/(c+K))
+
+plt.plot(c, R)

@@ -92,7 +92,7 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 1 #specify which variable to plot
+var_id = 3 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
@@ -237,8 +237,8 @@ superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
 #plt.xlabel('O2 saturation (%)')
 #plt.xlabel('SO4'.translate(subscript) + '2-(μM)'.translate(superscript))
 #plt.xlabel('CH4(μM)'.translate(subscript))
-#plt.xlabel('DOC (μM)')
-plt.xlabel('H2S(aq) (μM)'.translate(subscript))
+plt.xlabel('DOC (μM)')
+#plt.xlabel('H2S(aq) (μM)'.translate(subscript))
 plt.ylabel('Depth(cm)')
 
 
