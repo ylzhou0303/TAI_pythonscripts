@@ -62,10 +62,11 @@ t = 29
 MetThry_sum = sum(MetThry_col[:,t])    #total amount of CH4 produced within one day in theory if no outgassing, unit:mol
 MetActl_sum = sum(MetActl_col[:,t])    #total amount of CH4 produced within one day calculated from PFLOTRAN
 
-MetLoss = MetThry_sum - MetActl_sum   #total methane loss, including diffusion via sed_air-interface and ebullition
-MetLoss_rate = MetLoss / 0.01          #methane loss rate, unit: mol/m2/day, 0.01 is the domain area
+MetLoss = MetThry_sum - MetActl_sum   #tota
+#methane loss, including diffusion via sed_air-interface and ebullition
+MetLoss_rate = MetLoss / 0.01 *1e3         #methane loss rate, unit: mmol/m2/day, 0.01 is the domain area
 
-
+print(MetLoss_rate)
 #%% plot the theoretical profile (no outgassing) vs the actual profile
 # for day 29, the mean profile of theoretical increase in CH4 is
 t = 29
@@ -130,3 +131,65 @@ t = 29
 plt.bar(np.arange(1,50),MetFlux2[:,t], color = 'maroon', width = 0.7)
 plt.xlabel('Column ID')
 plt.ylabel('CH4 flux (mol m-2 d-1)')
+
+
+#%% compile and plot the methane fluxes
+import seaborn as sns
+# TOTAL flux
+F_ch4 = [['NO','S',0.01050926],
+         ['NO','noS',0.0117369427],
+         ['NonHetO','S',0.00966693],
+         ['NonHetO','noS',0.00992513],
+         ['HetO','S',0.00951178],
+         ['HetO','noS',0.01000204]]
+
+F_ch4 = pd.DataFrame(F_ch4)
+F_ch4.columns = ['Group','Sorts','Value']
+
+
+ #Diffusion
+D_ch4 = [['NO','S',0.00134243],
+         ['NO','noS',0.00128763],
+         ['NonHetO','S',0.00123589],
+         ['NonHetO','noS',0.000999004],
+         ['HetO','S',0.00120492],
+         ['HetO','noS',0.00100447]]
+
+D_ch4 = pd.DataFrame(D_ch4)
+D_ch4.columns = ['Group','Sorts','Value']
+
+
+#Ebullition
+E_ch4 = [['NO','S',0.0091668],
+         ['NO','noS',0.01045],
+         ['NonHetO','S',0.0084310],
+         ['NonHetO','noS',0.008926],
+         ['HetO','S',0.00830686],
+         ['HetO','noS',0.00899757]]
+E_ch4 = pd.DataFrame(E_ch4)
+E_ch4.columns = ['Group','Sorts','Value']
+
+#%% make the bar plot
+import seaborn as sns
+plt.rcParams.update({'font.size': 15})
+sns.barplot(x = 'Group', y = 'Value', hue = 'Sorts', data = E_ch4)
+plt.ylabel('Flux (mol m-2 day-1)')
+plt.xlabel('')
+plt.title('Ebullition flux')
+plt.ylim(0,0.013)
+plt.legend(loc = 0)
+
+
+#%% only show the data with S cycling
+
+
+
+#plt.bar([1,2,3],[0.01050926e3,0.00966693e3,0.00951178e3], 0.5)
+
+
+plt.bar(1, 0.01050926e3, 0.5, color = '#303030')
+plt.bar(2, 0.00966693e3, 0.5, color = '#24AEDB')
+plt.bar(3, 0.00951178e3, 0.5, color = '#D02F5E')
+labels = ['No O2', 'Homogeneity', 'Heterogeneity']
+plt.xticks(np.arange(1, 4, step = 1), labels)
+plt.ylabel('Flux (mmol m-2 d-1)')

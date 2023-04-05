@@ -10,7 +10,7 @@ import random
 import numpy as np
 nx = 10
 ny = 10
-nroots = 15
+nroots = 35
 
 #Define matrices of X and Y coordinates
 XCoords = np.zeros (shape = (nx,ny))
@@ -60,4 +60,9 @@ for i in range(nroots):
                 
     Strs = Strs + '\n\n' + temp_str
 
-
+#%%
+Strs2 = ''
+for i in range(nroots):
+    
+    temp_str = ('SOURCE_SINK ROL_het' + str(i+1) + '\n\tFLOW_CONDITION ROL_het\n\tTRANSPORT_CONDITION root\n\tREGION root' + str(i+1) + '\nEND')
+    Strs2 = Strs2 + '\n\n' + temp_str

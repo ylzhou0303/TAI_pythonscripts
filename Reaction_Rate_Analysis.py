@@ -50,7 +50,7 @@ HSC = np.array(HSC_df)
 
 # 3. data frame for monod inhibition constants
 I_df = {'DOMAer': [np.nan, np.nan, np.nan, np.nan, np.nan],
-          'Met': [1e-5, np.nan, np.nan, np.nan, np.nan],
+          'Met': [5e-5, np.nan, np.nan, np.nan, np.nan],
           'MetOxi':[np.nan, np.nan, np.nan, np.nan, np.nan],
           'SulRed': [np.nan, np.nan, np.nan, np.nan, np.nan],
           'SulOxi': [np.nan, np.nan, np.nan, np.nan, np.nan]}   # half saturation constants for monod inhibition, I = inhb/(inhb + conc)
@@ -85,7 +85,7 @@ def rate_calc(K, HSC, I, Conc):
                 inhb_temp = inhb / (Conc[:,:,j] + inhb)   #use the concentration matrix of this species times the half saturation constant
                 Inhb = Inhb * inhb_temp
         
-        Rates[:,:,n] = K[0,n] * Monod #* Inhb            #save the rate for this timepoint and this reaction, then go into the next loop, i.e. next timepoint    
+        Rates[:,:,n] = K[0,n] * Monod * Inhb            #save the rate for this timepoint and this reaction, then go into the next loop, i.e. next timepoint    
                                                         #if not considering Inhibition, the inhibition terms needs to be turned off
     return Rates
         

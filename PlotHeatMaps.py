@@ -20,6 +20,7 @@ nz = 9
 var_id = 1
 var_str = Var_str[var_id]
 layer = 6
+
 i_start = (nz - layer) * nx * ny
 i_end = i_start + nx * ny
 
@@ -34,7 +35,7 @@ B = np.flipud(A)   #flip upside down the matrix so that the grids with smaller y
                    #same as in the field
 
 plt.rcParams.update({'font.size': 12})
-plt.imshow(B, cmap ="plasma")
+plt.imshow(B, cmap ="plasma", vmin = 0, vmax = 23)
 plt.xticks(ticks = np.arange(0,10), labels = np.arange(1,11))
 plt.yticks(ticks = np.arange(0,10), labels = np.arange(10,0,-1))
 plt.xlabel('X coordinate (cm)')

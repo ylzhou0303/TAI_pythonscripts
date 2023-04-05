@@ -92,7 +92,7 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 3 #specify which variable to plot
+var_id = 2 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
@@ -140,7 +140,6 @@ plt.rcParams.update({'font.size': 12})
 # plt.ylim(-0.2, -0.03)
 # plt.xlim(0,20)
 
-#%% calculate the mean profiles of all columns
 Data_varin = Full_Data[:,:, var_id].reshape(nz, nx*ny, ntimepoint)
 MeanProfs = Data_varin.mean(axis = 1)
 depths = Coord[0:ngrids:interval, 2] - 0.7
@@ -180,7 +179,7 @@ with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + 
 plt.rcParams.update({'font.size': 15})
 fig, ax = plt.subplots()
 
-var_id = 2
+var_id = 1
 var_str = Var_str[var_id]
 t = 30
 
@@ -228,18 +227,70 @@ for z in range(0,nz):
 MeanProfs = np.array(MeanProfs) * conv
 plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#D02F5E', label = 'O2 heterogeneity')
 
-
 subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
 
-#plt.legend(loc = 0)
+plt.legend(loc = 0)
 #plt.xlabel(var_str[6:len(var_str)-4] + ' (μM)')
-#plt.xlabel('O2 saturation (%)')
-#plt.xlabel('SO4'.translate(subscript) + '2-(μM)'.translate(superscript))
-#plt.xlabel('CH4(μM)'.translate(subscript))
-plt.xlabel('DOC (μM)')
-#plt.xlabel('H2S(aq) (μM)'.translate(subscript))
+
+if var_id == 1:
+    xlab = 'O2 saturation (%)'
+elif var_id == 2:
+    xlab = 'CH4(μM)'.translate(subscript)
+elif var_id == 3:
+    xlab = 'DOC (μM)'
+elif var_id == 4:
+    xlab = 'SO4'.translate(subscript) + '2-(μM)'.translate(superscript)
+elif var_id == 5:
+    xlab = 'H2S(aq) (μM)'.translate(subscript)
+
+
+
+plt.xlabel(xlab)
 plt.ylabel('Depth(cm)')
+
+#%% plot the S cycling vs no S cycling
+plt.rcParams.update({'font.size': 15})
+fig, ax = plt.subplots()
+
+var_id = 2
+var_str = Var_str[var_id]
+t = 30
+
+if var_id == 1:
+    conv = 1/2.5e-4*100
+else:
+    conv = 1e6
+
+
+# calculate and plot mean profiles
+MeanProfs = []
+for z in range(0,nz):
+    i_start = nx * ny * z
+    i_end = nx * ny * (z + 1)
+    temp_mean = np.mean(Data_noS[i_start:i_end, :, var_id] , axis = 0)
+    MeanProfs.append(temp_mean)
+
+MeanProfs = np.array(MeanProfs) * conv
+plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color ='#303030', label = 'no S cycling')  #convert depth to cm
+
+
+
+MeanProfs = []
+for z in range(0,nz):
+    i_start = nx * ny * z
+    i_end = nx * ny * (z + 1)
+    temp_mean = np.mean(Data_S[i_start:i_end, :, var_id] , axis = 0)
+    MeanProfs.append(temp_mean)
+
+MeanProfs = np.array(MeanProfs) * conv
+plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#24AEDB', label = 'with S cycling')
+
+subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
+plt.xlabel('CH4(μM)'.translate(subscript))
+plt.ylabel('Depth(cm)')
+plt.legend(loc = 0)
 
 
 
