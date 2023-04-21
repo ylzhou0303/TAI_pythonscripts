@@ -179,7 +179,7 @@ with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + 
 plt.rcParams.update({'font.size': 15})
 fig, ax = plt.subplots()
 
-var_id = 1
+var_id = 5
 var_str = Var_str[var_id]
 t = 30
 
@@ -230,7 +230,7 @@ plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#D02F5E', label = 'O2 
 subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
 
-plt.legend(loc = 0)
+#plt.legend(loc = 0)
 #plt.xlabel(var_str[6:len(var_str)-4] + ' (μM)')
 
 if var_id == 1:

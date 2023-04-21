@@ -50,7 +50,7 @@ HSC = np.array(HSC_df)
 
 # 3. data frame for monod inhibition constants
 I_df = {'DOMAer': [np.nan, np.nan, np.nan, np.nan, np.nan],
-          'Met': [5e-5, np.nan, np.nan, np.nan, np.nan],
+          'Met': [2.5e-3, np.nan, np.nan, np.nan, np.nan],
           'MetOxi':[np.nan, np.nan, np.nan, np.nan, np.nan],
           'SulRed': [np.nan, np.nan, np.nan, np.nan, np.nan],
           'SulOxi': [np.nan, np.nan, np.nan, np.nan, np.nan]}   # half saturation constants for monod inhibition, I = inhb/(inhb + conc)

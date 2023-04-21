@@ -8,12 +8,12 @@ Created on Thu Feb  2 15:18:04 2023
 # This file calculates the mass balance of O2
 # to investigate the balance of O2 supply and consumption
 
-fluid_rate = 0.05e-8           # flow rate of O2 injection, m3/hr
-fluid_conc = 1.2               # concentration of O2, mol/L
+fluid_rate = 0.067e-8           # flow rate of O2 injection, m3/hr
+fluid_conc = 1.3               # concentration of O2, mol/L
 
 Oxy_in = fluid_rate / 3600 * (fluid_conc * 1e3)  #oxygen input rate to the root cell, mol s-1
 
-cell_id = 326
+cell_id = 361
 t = 30
 Oxy_consump = Rates[cell_id,t,0] + 2 * Rates[cell_id,t,2] + 2 * Rates[cell_id,t,4]
 #oxygen consumption rate of DOM aerobic respiration, CH4 oxidation and H2S oxidaiton
@@ -30,7 +30,7 @@ Oxy_inc = (Full_Data[cell_id,t,1] - Full_Data[cell_id,t-1,1]) * 1e3 * cell_vol /
 
 #%% calculate the diffusion, J = -D*(dc/dx)
 #horizontal flux
-dc = (Full_Data[327,t,1] - Full_Data[326,t,1]) * 1e3 #difference in O2 concentration between the neighboring cells, unit:mol m-3
+dc = (Full_Data[362,t,1] - Full_Data[361,t,1]) * 1e3 #difference in O2 concentration between the neighboring cells, unit:mol m-3
 dx = 0.01           #distance between the center point of the two cells, which is 1cm, unit:m
 D = 1.3e-9          #diffusion coefficient, unit: m2 s-1
 

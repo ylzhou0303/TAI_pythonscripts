@@ -17,7 +17,7 @@ if var_id == 1:
     conv = 1/2.5e-4*100
 else:
     conv = 1e6
-# for i in range(0, ncols):
+# for i in range(0, ncols):D
 #     conc = Data_oxyhet[i:ngrids:ncols, t, var_id] * conv
 #     plt.plot(conc, depths,color = 'skyblue', linestyle = '-')
 
@@ -28,11 +28,11 @@ MeanProfs = []
 for z in range(0,nz):
     i_start = nx * ny * z
     i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_m[i_start:i_end, :, var_id] , axis = 0)
+    temp_mean = np.mean(Data_lo[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
 MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color ='#303030', label = 'medium')  #convert depth to cm
+plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#24AEDB', label = '0.1x')
 
 
 
@@ -40,11 +40,13 @@ MeanProfs = []
 for z in range(0,nz):
     i_start = nx * ny * z
     i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_lo[i_start:i_end, :, var_id] , axis = 0)
+    temp_mean = np.mean(Data_m[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
 MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#24AEDB', label = 'low')
+plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color ='#303030', label = '1x')  #convert depth to cm
+
+
 
 
 MeanProfs = []
@@ -55,7 +57,7 @@ for z in range(0,nz):
     MeanProfs.append(temp_mean)
 
 MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#D02F5E', label = 'high')
+plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#D02F5E', label = '10x')
 
 
 
@@ -89,7 +91,7 @@ plt.ylabel('Depth(cm)')
 plt.rcParams.update({'font.size': 15})
 fig, ax = plt.subplots()
 
-var_id = 3
+var_id = 5
 var_str = Var_str[var_id]
 t = 30
 
@@ -104,11 +106,11 @@ MeanProfs = []
 for z in range(0,nz):
     i_start = nx * ny * z
     i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_1[i_start:i_end, :, var_id] , axis = 0)
+    temp_mean = np.mean(Data_lo[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
 MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color ='#303030', label = 'K_I = 0')  #convert depth to cm
+plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color ='#303030', label = 'K_I = 2.5e-5')  #convert depth to cm
 
 
 
@@ -116,7 +118,7 @@ MeanProfs = []
 for z in range(0,nz):
     i_start = nx * ny * z
     i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_2[i_start:i_end, :, var_id] , axis = 0)
+    temp_mean = np.mean(Data_m[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
 MeanProfs = np.array(MeanProfs) * conv
@@ -127,11 +129,11 @@ MeanProfs = []
 for z in range(0,nz):
     i_start = nx * ny * z
     i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_3[i_start:i_end, :, var_id] , axis = 0)
+    temp_mean = np.mean(Data_hi[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
 MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#D02F5E', label = 'K_I = 1e-4')
+plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#D02F5E', label = 'K_I = 2.5e-3')
 
 
 
@@ -139,11 +141,11 @@ MeanProfs = []
 for z in range(0,nz):
     i_start = nx * ny * z
     i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_4[i_start:i_end, :, var_id] , axis = 0)
+    temp_mean = np.mean(Data_noinhibition[i_start:i_end, :, var_id] , axis = 0)
     MeanProfs.append(temp_mean)
 
 MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = 'g', label = 'K_I = 5e-5')
+plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = 'g', label = 'No inhibition')
 
 subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")

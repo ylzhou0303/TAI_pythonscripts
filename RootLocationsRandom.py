@@ -10,7 +10,7 @@ import random
 import numpy as np
 nx = 10
 ny = 10
-nroots = 35
+nroots = 30
 
 #Define matrices of X and Y coordinates
 XCoords = np.zeros (shape = (nx,ny))
