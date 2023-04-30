@@ -31,10 +31,10 @@ ntimepoint = 31
 
 
 #%% import data
-nvars = 7;  #number of variables that I want to investigate
+nvars = 6;  #number of variables that I want to investigate
 Full_Data = np.empty( shape = (ngrids,ntimepoint,nvars), dtype = np.float32)
 Var_str = {0: 'Liquid Saturation', 1: 'Total O2(aq) [M]', 2: 'Total CH4(aq) [M]', 3: 'Total DOM1 [M]', 4: 'Total SO4-- [M]',
-           5: 'Total H2S(aq) [M]', 6: 'Total Tracer2 [M]'}
+           5: 'Total H2S(aq) [M]'}
 # the dictionary in which the variable ID is coupled with the variable name
 
 
@@ -92,7 +92,7 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 2 #specify which variable to plot
+var_id = 5 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
@@ -114,7 +114,7 @@ plt.xlabel(var_str[0:len(var_str)-4] + ' uM')
 #plt.xticks(np.arange(0, 2e-4, step = 5e-5))   
 #plt.xticks(np.arange(5.8e-4, 6.2e-4, step = 1e-5)) 
 # plt.ylim(-0.02,0)
-# plt.xlim(0,50)
+#plt.xlim([1990,2010])
 
 #%% plot the time series of the variable
 

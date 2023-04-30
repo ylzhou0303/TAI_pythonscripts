@@ -10,7 +10,7 @@ import random
 import numpy as np
 nx = 10
 ny = 10
-nroots = 30
+nroots = 90
 
 #Define matrices of X and Y coordinates
 XCoords = np.zeros (shape = (nx,ny))
@@ -31,7 +31,7 @@ i = 0
 while np.nan in RootGrids:
     r = random.randint(0, nx*ny-1)
     if (r not in RootGrids):
-        if r not in EdgeGrids:
+        #if r not in EdgeGrids:
         #to avoid repeatition, and to avoid roots being at the edge (because the roots at the edge cannot exchange with the neighboring grid, which is unrealistic)
             RootGrids[i] = r
             i = i + 1

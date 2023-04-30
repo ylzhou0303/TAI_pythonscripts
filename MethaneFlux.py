@@ -5,6 +5,73 @@ Created on Tue Jan  3 16:08:31 2023
 @author: YZ60069
 """
 
+#%% This file calculates the flux of the threshold-triggered removal of CH4 
+# I set up an artificial reaction in PFLOTRAN to simulate the ebullition process, in which CH4 is removed when CH4 concentration is above the threshold
+# I have three different methods to calculate the ebullition flux below
+
+#%% Method 1： Calculate the difference between theorectical CH4 concentration and the threshold
+
+#Import parameters of the simulation domain
+Thickness = np.reshape([[0.25]*100, [0.2]*100, [0.1]*100, [0.075]*100, [0.05]*100, [0.015]*100, [0.005]*100, [0.003]*100, [0.002]*100] , (1,900))
+Thickness = np.transpose(Thickness)   #thickness of each grid cell
+Area = 0.01 * 0.01    #area of each grid
+Porosity = 0.8
+
+# 1) Calculate the theoretical CH4 concentration assuming there is no ebullition
+# Because the concentration of CH4 calculated by PFLOTRAN would always be lower than the threshold (otherwise the extra would be removed),
+# I could not use the CH4 concentration reported by PFLOTRAN to calculate the rate of ebullition.
+# I need to first calculate what the theoretical CH4 concentration on next day would be if there is no ebullition.
+
+ch4_today = Full_Data[:, 29, 2]  #extract the CH4 concentration on day 29
+ch4_increase = (Rates[:, 29, 1] - Rates[:, 29, 2]) * 3600 *24   #the difference between methanogenesis rate and methane oxidation rate is the net increase in CH4 concentration
+ch4_tomorrow = ch4_today + ch4_increase   #the CH4 concentration on day30 if there is no ebullition going on  
+
+# 2) Calculate the extra CH4 relative to the threshold concentration, which would be the ebullition efflux in my model framework
+Diff = (ch4_tomorrow - Cth).reshape(900,1)     #the difference between theoretical CH4 concentration and threshold
+
+Volume = Thickness * Area * Porosity           #water volume of each of the 900 grid cells
+Flux_cell = Diff * 1e3 * Volume * (Diff > 0) * 1    #convert to mol/m3, multiplied by the water volume of each cell to calculate the amount of CH4 removed by ebullition from each cell
+                                                    #only do the calculation for the cells with a positive concentration difference, as CH4 is only removed when the CH4 concentration is above threshold, unit: mol d-1
+
+Flux = np.sum(Flux_cell)   # add the CH4 removal from each cell together, i.e., the CH4 ebullition flux from the simulation domain, unit: mol d-1
+Flux2 = Flux * 1e3 / (0.1 * 0.1) #divided by the surface area of the simulation domain to convert to mmol m-2 d-1
+
+print(Flux2)
+#%%
+plt.plot(ch4_today.reshape(9,100).mean(axis = 1) * 1e3, depths, 'b-', label = 'CH4 day 29')
+plt.plot(ch4_tomorrow.reshape(9,100).mean(axis = 1) * 1e3, depths, 'b--', label = 'theorectical CH4')
+plt.plot( [Cth*1e3]*9, depths, 'r-', label = 'threshold')
+plt.legend(loc = 0)
+plt.xlabel('CH4 concentration (mM)')
+plt.ylabel('Depth (m)')
+
+#%% Method 2: calculate the reaction rate of the CH4 removal reaction as the ebulliton flux, based on CH4 concentration
+
+# Import the reaction rate parameters
+Vmax = 5e-10      #maximum reaction rate, unit: mol L-1 s-1
+Cth = 0.0014236   #threshold concentration, unit: mol L-1
+f = 1e4/Cth       #scaling factor
+
+
+I = np.arctan((ch4_tomorrow - Cth)*f) / 3.14159 + 0.5   #calculate the reaction rate inhibition term
+R = Vmax * I         #the actual rate of ebullition, mol L-1 s-1
+R_day = (R * 3600 * 24).reshape(900,1)   #convert to mol L-1 day-1
+
+ch4_test = ch4_tomorrow - R_day
+
+
+# now calculate the amount (mol) of CH4 removed by ebullition from the simulation domain
+Volume = Thickness * Area * Porosity  #water volume of each of the 900 grid cells
+Flux = np.sum((R_day * 1e3) * Volume)  #the amount of CH4 removed by ebullition from the simulation domain, unit: mol d-1
+Flux = Flux / (0.1 * 0.1)   #divided by the surface area of the simulation domain to convert to mol m-2 d-1
+
+# This method can overestimate the CH4 flux, because it assumes that the reaction proceeds for one day,
+# but actually this reaction stops once the CH4 concentration falls below the threshold
+
+
+
+#%% Method 3: OLD APPROACH, BASED ON A MASS BALANCE APPROACH
+
 #%% This file calculates the flux of CH4 for each column
 # First calculates how much of CH4 is supposed to be in the column if there is no outgassing 
 # based on concentrations and reaction rates
@@ -25,7 +92,7 @@ for z in range(0,nz):  #calculate for all grids for each layer, one layer by one
     #calculate the amount of methane in theory if no outgassing (no ebullition and no diffusion out)
     MetGen = Rates[i_start:i_end,:,1] * 3600 * 24 * 1e3 * Volume * Porosity  #calculate the amount of methane produced , unit: mol (the unit of rate is mol L-1 s-1)
     MetOxi = Rates[i_start:i_end,:,2] *3600 * 24 * 1e3 * Volume  * Porosity
-    MetThry[:,:,z] = MetGen - MetOxi      
+    MetThry[:,:,z] = MetGen - MetOxi
     
     #calculate the actual total amount of methane within each grid, produced within one day
     MetAmt[:,:,z] = Full_Data[i_start:i_end,:,2]  * 1e3 * Volume * Porosity
@@ -64,9 +131,12 @@ MetActl_sum = sum(MetActl_col[:,t])    #total amount of CH4 produced within one 
 
 MetLoss = MetThry_sum - MetActl_sum   #tota
 #methane loss, including diffusion via sed_air-interface and ebullition
-MetLoss_rate = MetLoss / 0.01 *1e3         #methane loss rate, unit: mmol/m2/day, 0.01 is the domain area
+MetLoss_rate = MetLoss / 0.01 *1e3        #methane loss rate, unit: mmmol/m2/day, 0.01 is the domain area (m2)
 
 print(MetLoss_rate)
+
+#%% the CH4 emission via diffusion
+print(Mass[29,27]*100*1000)
 #%% plot the theoretical profile (no outgassing) vs the actual profile
 # for day 29, the mean profile of theoretical increase in CH4 is
 t = 29
@@ -187,9 +257,9 @@ plt.legend(loc = 0)
 #plt.bar([1,2,3],[0.01050926e3,0.00966693e3,0.00951178e3], 0.5)
 
 
-plt.bar(1, 0.01050926e3, 0.5, color = '#303030')
-plt.bar(2, 0.00966693e3, 0.5, color = '#24AEDB')
-plt.bar(3, 0.00951178e3, 0.5, color = '#D02F5E')
+plt.bar(1, 10.4919, 0.5, color = '#303030')
+plt.bar(2, 9.6081, 0.5, color = '#24AEDB')
+plt.bar(3, 9.4279, 0.5, color = '#D02F5E')
 labels = ['No O2', 'Homogeneity', 'Heterogeneity']
 plt.xticks(np.arange(1, 4, step = 1), labels)
-plt.ylabel('Flux (mmol m-2 d-1)')
+plt.ylabel('CH4 Efflux (mmol m-2 d-1)')

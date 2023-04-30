@@ -50,7 +50,7 @@ HSC = np.array(HSC_df)
 
 # 3. data frame for monod inhibition constants
 I_df = {'DOMAer': [np.nan, np.nan, np.nan, np.nan, np.nan],
-          'Met': [2.5e-3, np.nan, np.nan, np.nan, np.nan],
+          'Met': [2.5e-4, np.nan, np.nan, np.nan, np.nan],
           'MetOxi':[np.nan, np.nan, np.nan, np.nan, np.nan],
           'SulRed': [np.nan, np.nan, np.nan, np.nan, np.nan],
           'SulOxi': [np.nan, np.nan, np.nan, np.nan, np.nan]}   # half saturation constants for monod inhibition, I = inhb/(inhb + conc)
@@ -315,6 +315,42 @@ plt.plot(np.arange(1,901,1),Rates[:,t,reac], 'ro')
 V = 4e-7
 K = 1e-2
 c = np.arange(0,1.2e-3,1e-4)
-R = V*(c/(c+K))#*(c/(c+K))*(c/(c+K))#*(c/(c+K))
+R = V*(c/(c+K))*(c/(c+K))*(c/(c+K))*(c/(c+K))
 
 plt.plot(c, R)
+
+#%% Monod and Inverse Monod inhibition
+V = 4e-7
+K1 = 0.1
+K2 = 0.1
+c = np.arange(0,0.1,1e-4)
+R0 = V * (c/(c+K1))
+R1 = V * (c/(c+K1)) * (c/(c+K2))
+R2 = V * (c/(c+K1)) * (c/(c+K2)) * (c/(c+K2))
+
+plt.plot(c, R0, 'g-')
+plt.plot(c, R1, 'r-')
+plt.plot(c, R2, 'b-')
+
+
+#%%
+cth = 1e-3
+f = 1e4 / cth
+x = np.arange(0,0.005,1e-5)
+y = np.arctan((x - cth)*f) / 3.14 + 0.5
+  
+plt.plot(x,y)
+plt.xlabel('Concentration (M)')
+
+
+#%%
+time = [0,1,2,3,4,5]
+ch4 = np.array([2.000000E-03, 1.136085E-03, 9.907725E-04, 9.876367E-04, 9.852182E-04, 9.831822E-04])
+
+plt.plot(time, ch4, label = 'changes in CH4 over time')
+plt.plot([0,5], [1e-3,1e-3], 'r-', label = 'threshold concentration')
+plt.ylim([0.0005,0.0022])
+
+plt.xlabel('Time (day)')
+plt.ylabel('CH4 concentration (M)')
+plt.legend(loc = 0)
