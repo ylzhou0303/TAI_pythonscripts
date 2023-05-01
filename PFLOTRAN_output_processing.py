@@ -92,7 +92,7 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 5 #specify which variable to plot
+var_id = 4 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
@@ -172,66 +172,34 @@ filename = 'growing_season.pickle'
 with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + filename, 'rb') as handle:
     Growing_Season_CB = pickle.load(handle)
        
-    
+
+#%% Calculate and Plot the mean profiles of different O2 injection modes
+# Calculate the mean profiles
+t = 30        #specify the time point, here extract the data on day 30
+MP_NO = np.zeros((9,6), dtype = float)
+for var_id in range(0,6):
+    MP_NO[:,var_id] = NO[:, t, var_id].reshape(9,100).mean(axis = 1)      #reshape the matrix of concentration to a 9*100 matrix, each row is the data of one soil layer containing 100 cells
+    MP_Homo[:,var_id] = Homo[:, t, var_id].reshape(9,100).mean(axis = 1)
+    MP_Het[:,var_id] = Het[:, t, var_id].reshape(9,100).mean(axis = 1)
+
 #%% Plot the profiles from different set up
-
-
 plt.rcParams.update({'font.size': 15})
 fig, ax = plt.subplots()
 
-var_id = 5
-var_str = Var_str[var_id]
-t = 30
-
+var_id = 1   #choose which variable to plot
 if var_id == 1:
     conv = 1/2.5e-4*100
 else:
     conv = 1e6
-# for i in range(0, ncols):
-#     conc = Data_oxyhet[i:ngrids:ncols, t, var_id] * conv
-#     plt.plot(conc, depths,color = 'skyblue', linestyle = '-')
 
-# plt.plot(conc,depths, color = 'skyblue', linestyle = '-', label = 'O2 het, each column')
+y = depths[1:8]*100   #convert depth values to cm
 
-# calculate and plot mean profiles
-MeanProfs = []
-for z in range(0,nz):
-    i_start = nx * ny * z
-    i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_noROL[i_start:i_end, :, var_id] , axis = 0)
-    MeanProfs.append(temp_mean)
-
-MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color ='#303030', label = 'no ROL')  #convert depth to cm
-
-
-
-MeanProfs = []
-for z in range(0,nz):
-    i_start = nx * ny * z
-    i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_oxyhomo[i_start:i_end, :, var_id] , axis = 0)
-    MeanProfs.append(temp_mean)
-
-MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#24AEDB', label = 'O2 homogeneity')
-
-
-MeanProfs = []
-for z in range(0,nz):
-    i_start = nx * ny * z
-    i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_oxyhet[i_start:i_end, :, var_id] , axis = 0)
-    MeanProfs.append(temp_mean)
-
-MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#D02F5E', label = 'O2 heterogeneity')
+plt.plot(MP_NO[1:8, var_id] * conv, y, '-', color ='#303030', label = 'no O2 release')  #convert depth to cm
+plt.plot(MP_Homo[1:8, var_id] * conv, y, '-', color = '#24AEDB', label = 'Homogeneity')
+plt.plot(MP_Het[1:8, var_id] * conv, y, '-', color = '#D02F5E', label = 'Heterogeneity')
 
 subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
-
-#plt.legend(loc = 0)
-#plt.xlabel(var_str[6:len(var_str)-4] + ' (μM)')
 
 if var_id == 1:
     xlab = 'O2 saturation (%)'

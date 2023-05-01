@@ -23,20 +23,30 @@ Porosity = 0.8
 # I need to first calculate what the theoretical CH4 concentration on next day would be if there is no ebullition.
 
 ch4_today = Full_Data[:, 29, 2]  #extract the CH4 concentration on day 29
-ch4_increase = (Rates[:, 29, 1] - Rates[:, 29, 2]) * 3600 *24   #the difference between methanogenesis rate and methane oxidation rate is the net increase in CH4 concentration
+ch4_increase = (Rates[:, 29, 1] - Rates[:, 29, 2]) * 3600 * 24   #the difference between methanogenesis rate and methane oxidation rate is the net increase in CH4 concentration
 ch4_tomorrow = ch4_today + ch4_increase   #the CH4 concentration on day30 if there is no ebullition going on  
 
 # 2) Calculate the extra CH4 relative to the threshold concentration, which would be the ebullition efflux in my model framework
+Cth = 0.0014236   #threshold concentration, unit: mol L-1
 Diff = (ch4_tomorrow - Cth).reshape(900,1)     #the difference between theoretical CH4 concentration and threshold
 
 Volume = Thickness * Area * Porosity           #water volume of each of the 900 grid cells
-Flux_cell = Diff * 1e3 * Volume * (Diff > 0) * 1    #convert to mol/m3, multiplied by the water volume of each cell to calculate the amount of CH4 removed by ebullition from each cell
+Ebl_cell = Diff * 1e3 * Volume * (Diff > 0) * 1    #convert to mol/m3, multiplied by the water volume of each cell to calculate the amount of CH4 removed by ebullition from each cell
                                                     #only do the calculation for the cells with a positive concentration difference, as CH4 is only removed when the CH4 concentration is above threshold, unit: mol d-1
 
-Flux = np.sum(Flux_cell)   # add the CH4 removal from each cell together, i.e., the CH4 ebullition flux from the simulation domain, unit: mol d-1
-Flux2 = Flux * 1e3 / (0.1 * 0.1) #divided by the surface area of the simulation domain to convert to mmol m-2 d-1
+Ebl = np.sum(Ebl_cell)   # add the CH4 removal from each cell together, i.e., the CH4 ebullition flux from the simulation domain, unit: mol d-1
+Ebl2 = Ebl * 1e3 / (0.1 * 0.1) #divided by the surface area of the simulation domain to convert to mmol m-2 d-1
 
-print(Flux2)
+#Compile fluxes
+MetFlux = {'Total Flux': [Ebl2 + (-Mass[29,24]*1e3/0.01)], 'Diffusion': [- Mass[29,24]*1e3/0.01], 'Ebullition': [Ebl2]}
+MetFlux = pd.DataFrame(MetFlux)
+
+print('Ebullition:\n' + str(MetFlux['Ebullition']))
+print('\nDiffusion:\n' + str(MetFlux['Diffusion']))
+print('\nTotal flux:\n' + str(MetFlux['Total Flux']))
+
+
+
 #%%
 plt.plot(ch4_today.reshape(9,100).mean(axis = 1) * 1e3, depths, 'b-', label = 'CH4 day 29')
 plt.plot(ch4_tomorrow.reshape(9,100).mean(axis = 1) * 1e3, depths, 'b--', label = 'theorectical CH4')
@@ -251,15 +261,49 @@ plt.legend(loc = 0)
 
 
 #%% only show the data with S cycling
-
-
-
-#plt.bar([1,2,3],[0.01050926e3,0.00966693e3,0.00951178e3], 0.5)
-
-
-plt.bar(1, 10.4919, 0.5, color = '#303030')
-plt.bar(2, 9.6081, 0.5, color = '#24AEDB')
-plt.bar(3, 9.4279, 0.5, color = '#D02F5E')
+plt.bar(1, 17.1517, 0.5, color = '#303030')
+plt.bar(2, 15.1256, 0.5, color = '#24AEDB')
+plt.bar(3, 14.9851, 0.5, color = '#D02F5E')
 labels = ['No O2', 'Homogeneity', 'Heterogeneity']
 plt.xticks(np.arange(1, 4, step = 1), labels)
 plt.ylabel('CH4 Efflux (mmol m-2 d-1)')
+
+
+
+#%% plot all three fluxes of three O2 injection modes together
+labels = ['No O2 release', 'Homogeneity', 'Heterogeneity']
+NO = FluxCmpr[0,:]
+Homo = FluxCmpr[1,:]
+Het = FluxCmpr[2,:]
+x = np.array([0, 2, 4])
+width = 0.25
+
+fig, ax = plt.subplots()
+rects1 = ax.bar(x - 0.3, NO, width, label = labels[0], color = '#303030')
+rects2 = ax.bar(x, Homo, width, label = labels[1], color = '#24AEDB')
+rects3 = ax.bar(x + 0.3, Het, width, label = labels[2], color = '#D02F5E')
+
+xticklabs = []
+plt.legend(loc = 0)
+plt.ylabel('CH4 Flux (mmol m-2 d-1)')
+plt.xticks(np.array([0, 2, 4]), ['Total Flux', 'Interface diffusion', 'Ebullition'])
+
+
+#%% plot all three fluxes under different S levels
+labels = ['no S', 'low S', 'medium S', 'high S']
+x = np.array([0, 2, 4])
+width = 0.2
+
+noS = FluxCmpr[0,:]
+
+
+fig, ax = plt.subplots()
+rects1 = ax.bar(x - 0.4, noS, width, label = labels[0], color = '#303030')
+rects2 = ax.bar(x - 0.2, np.array(MetFlux_lowS), width, label = labels[1], color = '#24AEDB')
+rects3 = ax.bar(x + 0.2, np.array(MetFlux_medS), width, label = labels[2], color = 'y')
+rects4 = ax.bar(x + 0.4, np.array(MetFlux_highS), width, label = labels[3], color = '#D02F5E')
+
+xticklabs = []
+plt.legend(loc = 0)
+plt.ylabel('CH4 Flux (mmol m-2 d-1)')
+plt.xticks(np.array([0, 2, 4]), ['Total Flux', 'Interface diffusion', 'Ebullition'])
