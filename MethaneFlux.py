@@ -37,6 +37,18 @@ Ebl_cell = Diff * 1e3 * Volume * (Diff > 0) * 1    #convert to mol/m3, multiplie
 Ebl = np.sum(Ebl_cell)   # add the CH4 removal from each cell together, i.e., the CH4 ebullition flux from the simulation domain, unit: mol d-1
 Ebl2 = Ebl * 1e3 / (0.1 * 0.1) #divided by the surface area of the simulation domain to convert to mmol m-2 d-1
 
+
+# 3) Plant-mediated CH4 transport
+ch4_rootlayer = Full_Data[300:400, 29, 2]   #extract the CH4 conc at the root layer
+tracer2_rootlayer = Full_Data[300:400, 29, 6]   #extract the tracer2 conc at the root layer
+Cth_tracer2 = 1e-4
+Trigger = (tracer2_rootlayer > Cth_tracer2) * 1        #judge if the tracer2 concentration is above the threshold, if yes, assign 1, if not assign 0
+
+Rate = 4.8e-8 * (ch4_rootlayer / (ch4_rootlayer + 1e-2)) * Trigger    #calculate the reaction rate for each root cell, the non-root cells would time a 0, unit: mol L-1 s-1
+MetFlux_plant_cell = Rate * 1e3 * (0.8 * 0.01 * 0.01 * 0.075) * 3600 * 24      # convert to areal flux per day, by multiplying the volume of water of the root cells, unit: mol d-1 cell-1
+MetFlux_plant = np.sum(MetFlux_plant_cell)    #calculate the sum of flux for the entire simulation domain
+MetFlux_plant2 = MetFlux_plant * 1e3 / (0.1 * 0.1)  #convert to mmol m-2 d-1
+
 #Compile fluxes
 MetFlux = {'Total Flux': [Ebl2 + (-Mass[29,24]*1e3/0.01)], 'Diffusion': [- Mass[29,24]*1e3/0.01], 'Ebullition': [Ebl2]}
 MetFlux = pd.DataFrame(MetFlux)

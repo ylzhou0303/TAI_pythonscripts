@@ -31,10 +31,10 @@ ntimepoint = 31
 
 
 #%% import data
-nvars = 6;  #number of variables that I want to investigate
+nvars = 7;  #number of variables that I want to investigate
 Full_Data = np.empty( shape = (ngrids,ntimepoint,nvars), dtype = np.float32)
 Var_str = {0: 'Liquid Saturation', 1: 'Total O2(aq) [M]', 2: 'Total CH4(aq) [M]', 3: 'Total DOM1 [M]', 4: 'Total SO4-- [M]',
-           5: 'Total H2S(aq) [M]'}
+           5: 'Total H2S(aq) [M]', 6: 'Total Tracer2 [M]'}
 # the dictionary in which the variable ID is coupled with the variable name
 
 
@@ -92,7 +92,7 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 4 #specify which variable to plot
+var_id = 6 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
@@ -106,10 +106,11 @@ plt.rcParams.update({'font.size': 15})
 
 for i in range(0,ntimepoint,1):
     conc = Full_Data[61 : ngrids : interval, i, var_id] * conv
-    plt.plot(conc, depths)
+    plt.plot(conc/conv, depths)
     
 plt.ylabel('Soil Depth (m)')
 plt.xlabel(var_str[0:len(var_str)-4] + ' uM')
+#plt.xlim(-1e-5,1e-5)
 #plt.xlabel('%O2 sat')
 #plt.xticks(np.arange(0, 2e-4, step = 5e-5))   
 #plt.xticks(np.arange(5.8e-4, 6.2e-4, step = 1e-5)) 
@@ -177,8 +178,12 @@ with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + 
 # Calculate the mean profiles
 t = 30        #specify the time point, here extract the data on day 30
 MP_NO = np.zeros((9,6), dtype = float)
+MP_Homo = np.zeros((9,6), dtype = float)
+MP_Het = np.zeros((9,6), dtype = float)
+
 for var_id in range(0,6):
-    MP_NO[:,var_id] = NO[:, t, var_id].reshape(9,100).mean(axis = 1)      #reshape the matrix of concentration to a 9*100 matrix, each row is the data of one soil layer containing 100 cells
+    #reshape the matrix of concentration to a 9*100 matrix, each row is the data of one soil layer containing 100 cells, and calculate the mean of all cells within the same layer
+    MP_NO[:,var_id] = NO[:, t, var_id].reshape(9,100).mean(axis = 1)      
     MP_Homo[:,var_id] = Homo[:, t, var_id].reshape(9,100).mean(axis = 1)
     MP_Het[:,var_id] = Het[:, t, var_id].reshape(9,100).mean(axis = 1)
 
@@ -212,10 +217,102 @@ elif var_id == 4:
 elif var_id == 5:
     xlab = 'H2S(aq) (μM)'.translate(subscript)
 
+plt.xlabel(xlab)
+plt.ylabel('Depth(cm)')
 
+
+#%% compile the species concentration at the root layer
+ConcCmpr = np.zeros((3,6), dtype = float)
+ConcCmpr[0,] = MP_NO[3,]
+ConcCmpr[1,] = MP_Homo[3,]
+ConcCmpr[2,] = MP_Het[3,]
+
+#%% Compile the CH4 fluxes
+FluxCmpr = np.array([MetFlux_NO, MetFlux_Homo, MetFlux_Het]).reshape(3,3)
+FluxCmpr_df = pd.DataFrame(FluxCmpr)
+FluxCmpr_df.columns = ['Total Flux', 'Diffusion', 'Ebullition']
+FluxCmpr_df.index = ['NO', 'Homo', 'Het']
+
+
+
+#%% S cycling
+# Calculate and plot the mean profiles under different SO4-- concentrations
+
+t = 30        #specify the time point, here extract the data on day 30
+MP_noS = np.zeros((9,6), dtype = float)
+MP_lowS = np.zeros((9,6), dtype = float)
+MP_medS = np.zeros((9,6), dtype = float)
+MP_highS = np.zeros((9,6), dtype = float)
+
+for var_id in range(0,6):
+    #reshape the matrix of concentration to a 9*100 matrix, each row is the data of one soil layer containing 100 cells, and calculate the mean of all cells within the same layer
+    MP_noS[:,var_id] = noS[:, t, var_id].reshape(9,100).mean(axis = 1)      
+    MP_lowS[:,var_id] = lowS[:, t, var_id].reshape(9,100).mean(axis = 1)
+    MP_medS[:,var_id] = medS[:, t, var_id].reshape(9,100).mean(axis = 1)
+    MP_highS[:,var_id] = highS[:, t, var_id].reshape(9,100).mean(axis = 1)
+
+
+#%%
+
+plt.rcParams.update({'font.size': 15})
+fig, ax = plt.subplots()
+
+var_id = 5   #choose which variable to plot
+if var_id == 1:
+    conv = 1/2.5e-4*100
+else:
+    conv = 1e6
+
+y = depths[1:8]*100   #convert depth values to cm
+
+plt.plot(MP_noS[1:8, var_id] * conv, y, '-', color ='#303030', label = 'no S')  #convert depth to cm
+plt.plot(MP_lowS[1:8, var_id] * conv, y, '-', color = '#24AEDB', label = 'low S')
+plt.plot(MP_medS[1:8, var_id] * conv, y, '-', color = 'y', label = 'medium S')
+plt.plot(MP_highS[1:8, var_id] * conv, y, '-', color = '#D02F5E', label = 'high S')
+
+subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
+
+if var_id == 1:
+    xlab = 'O2 saturation (%)'
+elif var_id == 2:
+    xlab = 'CH4(μM)'.translate(subscript)
+elif var_id == 3:
+    xlab = 'DOC (μM)'
+elif var_id == 4:
+    xlab = 'SO4'.translate(subscript) + '2-(μM)'.translate(superscript)
+elif var_id == 5:
+    xlab = 'H2S(aq) (μM)'.translate(subscript)
 
 plt.xlabel(xlab)
 plt.ylabel('Depth(cm)')
+plt.legend(loc = 0)
+
+
+
+
+#%% compile the species concentration at the root layer
+ConcCmpr = np.zeros((4,6), dtype = float)
+ConcCmpr[0,] = MP_noS[3,]
+ConcCmpr[1,] = MP_lowS[3,]
+ConcCmpr[2,] = MP_medS[3,]
+ConcCmpr[3,] = MP_highS[3,]
+ConcCmpr = pd.DataFrame(ConcCmpr)
+ConcCmpr.index = ['noS', 'lowS', 'medS (standard run)', 'highS']
+
+
+
+#%% Compile the CH4 fluxes
+FluxCmpr = np.array([MetFlux_noS, MetFlux_lowS, MetFlux_medS, MetFlux_highS]).reshape(4,3)
+FluxCmpr_df = pd.DataFrame(FluxCmpr)
+FluxCmpr_df.columns = ['Total Flux', 'Diffusion', 'Ebullition']
+FluxCmpr_df.index = ['noS', 'lowS', 'medS', 'highS']
+
+
+
+
+
+
 
 #%% plot the S cycling vs no S cycling
 plt.rcParams.update({'font.size': 15})
