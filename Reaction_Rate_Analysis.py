@@ -21,6 +21,7 @@ import os
 os.chdir('C:/Users/yz60069/TAI/TAI_fresh')
 #os.chdir('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Marsh Interior/All inundated/ root')
 import scipy.io
+from scipy.stats import pearsonr
 #mat = scipy.io.loadmat('WaterTableData.mat')
 
 
@@ -28,18 +29,21 @@ import scipy.io
 
 
 # 1. data frame for maximum reaction rate constants
-K_df = {'DOMAer': [2e-8], 'Met': [5e-10], 'MetOxi': [4e-9], 'SulRed': [5e-9],'SulOxi': [1e-7]}
+# standard runs: K_df = {'DOMAer': [2e-8], 'Met': [5e-10], 'MetOxi': [4e-9], 'SulRed': [5e-9],'SulOxi': [1e-7]}
+
+K_df = {'DOMAer': [1e-7], 'Met': [4e-10], 'MetOxi': [5e-10], 'SulRed': [6.24e-9],'SulOxi': [5e-7], 'MetOxiSul': [2e-10]}
 K_df = pd.DataFrame(K_df)
 K = np.array(K_df)
 
 
 
 # 2. data frame for monod half saturation constants
-HSC_df = {'DOMAer': [1e-4, np.nan, 5e-3, np.nan, np.nan],
-          'Met': [np.nan, np.nan, 2e-3, np.nan, np.nan],
-          'MetOxi':[1e-4, 3e-4, np.nan, np.nan, np.nan],
-          'SulRed': [np.nan, np.nan, 2e-3, 5e-3, np.nan],
-          'SulOxi': [1e-4, np.nan, np.nan, np.nan, 5e-4]}   #HSC: half saturation constant
+HSC_df = {'DOMAer': [8e-6, np.nan, 4e-3, np.nan, np.nan],
+          'Met': [np.nan, np.nan, 4e-3, np.nan, np.nan],
+          'MetOxi':[8e-6, 5e-4, np.nan, np.nan, np.nan],
+          'SulRed': [np.nan, np.nan, 4e-3, 1e-4, np.nan],
+          'SulOxi': [8e-6, np.nan, np.nan, np.nan, 1e-3],
+          'MetOxiSul':[np.nan, 5e-4, np.nan, 1e-4, np.nan]}   #HSC: half saturation constant
 
 HSC_df = pd.DataFrame(HSC_df)
 HSC_df.index = ['Monod_o2', 'Monod_ch4', 'Monod_dom', 'Monod_so4', 'Monod_h2s']
@@ -53,7 +57,8 @@ I_df = {'DOMAer': [np.nan, np.nan, np.nan, np.nan, np.nan],
           'Met': [2.5e-4, np.nan, np.nan, np.nan, np.nan],
           'MetOxi':[np.nan, np.nan, np.nan, np.nan, np.nan],
           'SulRed': [np.nan, np.nan, np.nan, np.nan, np.nan],
-          'SulOxi': [np.nan, np.nan, np.nan, np.nan, np.nan]}   # half saturation constants for monod inhibition, I = inhb/(inhb + conc)
+          'SulOxi': [np.nan, np.nan, np.nan, np.nan, np.nan],
+          'MetOxiSul': [np.nan, np.nan, np.nan, np.nan, np.nan]}   # half saturation constants for monod inhibition, I = inhb/(inhb + conc)
 
 I_df = pd.DataFrame(I_df)
 I_df.index = ['Monod_o2', 'Monod_ch4', 'Monod_dom', 'Monod_so4', 'Monod_h2s']
@@ -63,7 +68,7 @@ I = np.array(I_df)
 
 
 #%% This function calculates the actual reaction rates based on the maximum reaction rates, monod constants, and concentrations
-nreac = 5
+nreac = 6
 nspecies = 5
 
 def rate_calc(K, HSC, I, Conc):
@@ -99,7 +104,7 @@ Rates = rate_calc(K, HSC, I, Conc)
 #%% verify the rates calculation
 reac = 1
 grid = 10
-t = 29
+t = 15
 
 oxygen = Full_Data[grid,t,1]
 dom = Full_Data[grid,t,3]
@@ -110,6 +115,114 @@ inhb = I[0,1]
 rate = K[0,reac] *    dom / (monod + dom)    *    inhb/(inhb + oxygen)
 
 print((rate - Rates[grid,t,reac])/rate)
+
+
+
+#%% Plot Rates vs concentration to investigate the nonlinear response of rate to concentration changes
+#%% create concentration series for plotting Monod curve
+x_o2 = np.arange(0, 2.5e-4, 1e-6)
+x_ch4 = np.arange(0, 3e-2, 1e-4)
+x_doc = np.arange(0, 3e-2, 1e-4)
+x_so4 = np.arange(0, 3e-2, 1e-4)
+x_h2s = np.arange(0, 3e-2, 1e-4)
+
+
+#%% Extract concentration and rate data for the O2 injection layer
+
+# reaction ID: 0: DOM Aerobic decomposition; 1: Methanogenesis; 2: CH4 oxidation
+# 3: Sulfate reduction; 4: H2S oxidation
+
+
+#%% 1) DOM aerobic decomposition dependence on O2 conc
+t = 15  #timepoint
+var_id = 1
+reac_id = 0
+
+K_o2 = 8e-6
+conv = 1/2.5e-4*100
+#o2_injection = np.zeros(100)
+#o2_injection[[13,17,26,27,28,46,52,57,58,61,65,72,75,81,82]] = 1.3 * 1e3 *(1e-8/15/3600)/(0.01*0.01*0.075*1e3) * 1800  #concentration change caused by O2 injection, unit: mol L-1 s-1
+
+# the Monod curve
+y = x_o2 / (x_o2 + K_o2)
+plt.plot(x_o2 * conv, y, 'k--')
+plt.xlabel('O2% sat')
+plt.ylabel('Monod')
+
+
+conc = Full_Data[300:400, t, var_id]
+rates = conc / (conc + K_o2)
+plt.plot(conc *conv, rates, 'ro')
+
+# the mean of actual rate
+plt.plot(np.mean(conc) * conv, np.mean(rates), 'r*', markersize = 10, label = 'mean rate([O2])')
+
+# the rate calculated by mean of concentration (not considering the spatial heterogeneity of O2)
+plt.plot(np.mean(conc) * conv, np.mean(conc)/(np.mean(conc) + K_o2), 'k*', markersize = 10, label = 'rate(mean [O2])')
+
+
+
+# the homogeneity mode
+o2_homo = np.mean(Data_Homo[300:400, timepoint, var_id])
+plt.plot(o2_homo * conv, o2_homo/(o2_homo + K_o2), 'b*', markersize = 10, label = 'Homo rate')
+
+# Calculate the Pearson's correlation coefficient to assess the linearity/nonlinearity
+Pcoef1 = pearsonr(conc, rates)
+Pcoef2 = pearsonr(x_o2, y)
+
+
+#print(Pcoef1[0], Pcoef2[0])
+plt.text(60, 0.6, 'K_O2=' + str(K_o2) + 'M\n' + 'Pearsons coef\n' + str(round(Pcoef1[0],2)))
+plt.legend(loc = 0)
+
+
+#%% Calculate the O2 consumption rate
+R_o2 = Rates[300:400, t, 0] + Rates[300:400, t, 2] + Rates[300:400, t, 4]   # the sum of DOC aerobic decomposition rate, CH4 aerobic oxidation rate and H2S oxidation rate
+plt.plot(conc, R_o2, 'bo')
+
+Pcoef = pearsonr(conc, R_o2)
+
+
+
+#%%
+y = x_o2 / (x_o2 + 1e-4)
+plt.plot(x_o2, y, 'b-')
+
+y = 5* x_o2 / (x_o2 + 1e-3)
+plt.plot(x_o2, y, 'r-')
+
+
+
+#%% 2) DOM aerobic decomposition dependece on DOM conc
+var_id = 3
+reac_id = 0
+
+conc = Full_Data[300:400, timepoint, var_id]
+rates = K[0, reac_id] * conc / (conc + 5e-3)
+plt.plot(conc, rates, 'bo')
+
+# the Monod curve
+y = K[0, reac_id] * x_doc / (x_doc + 5e-3)
+plt.plot(x_doc, y, 'b-')
+
+
+#%% CH4 oxidation dependece on O2 conc
+var_id = 1
+reac_id = 2
+
+conc = Full_Data[300:400, 15, var_id]
+rates = conc / (conc + 8e-6)
+plt.plot(conc, rates, 'bo')
+
+# the Monod curve
+y = x_o2 / (x_o2 + 8e-6)
+plt.plot(x_o2, y, 'b-')
+
+# Calculate the Pearson's correlation coefficient to assess the linearity/nonlinearity
+Pcoef1 = pearsonr(conc, rates)
+Pcoef2 = pearsonr(x_o2, y)
+
+print(Pcoef1[0], Pcoef2[0])
 
 
 #%% compare rates of all reactions
@@ -179,29 +292,7 @@ plt.title(K_df.columns[reac])
 
 
 
-#%% plot concentration vs reaction rate
-reac = 1
-t = 30
 
-dom_range = np.arange(0,0.02,0.001)
-monod = dom_range / (dom_range + 2e-3)
-
-oxy_range = np.arange(0,2.5e-4,1e-5)
-inhb = 1e-4 / (1e-4 + oxy_range)
-
-
-y = K[0, reac] * inhb
-plt.plot(oxy_range, y, 'b-')
-
-
-#real reaction rate based on concentrations
-x = Data_oxyhet[:,t,1]   #concentration of DOM
-y = Rates[:,t,reac]
-plt.plot(x, y, 'ko',label = 'rate inside each grid')
-
-plt.xlabel('O2 mol L-1')
-plt.ylabel('Methanogenesis rate (mol L-1 s-1)')
-plt.legend(loc = 0)
 
 #%% Methane production, I keep this section to verify the results calculated above
 k = 9e-10
@@ -334,9 +425,9 @@ plt.plot(c, R2, 'b-')
 
 
 #%%
-cth = 1e-3
+cth = 1e-4
 f = 1e4 / cth
-x = np.arange(0,0.005,1e-5)
+x = np.arange(0,1e-3,1e-5)
 y = np.arctan((x - cth)*f) / 3.14 + 0.5
   
 plt.plot(x,y)

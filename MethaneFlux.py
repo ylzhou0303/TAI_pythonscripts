@@ -9,10 +9,12 @@ Created on Tue Jan  3 16:08:31 2023
 # I set up an artificial reaction in PFLOTRAN to simulate the ebullition process, in which CH4 is removed when CH4 concentration is above the threshold
 # I have three different methods to calculate the ebullition flux below
 
-#%% Method 1： Calculate the difference between theorectical CH4 concentration and the threshold
+#%% Ebullition
+# Method 1： Calculate the difference between theorectical CH4 concentration and the threshold
 
 #Import parameters of the simulation domain
-Thickness = np.reshape([[0.25]*100, [0.2]*100, [0.1]*100, [0.075]*100, [0.05]*100, [0.015]*100, [0.005]*100, [0.003]*100, [0.002]*100] , (1,900))
+#Thickness = np.reshape([[0.25]*100, [0.2]*100, [0.1]*100, [0.075]*100, [0.05]*100, [0.015]*100, [0.005]*100, [0.003]*100, [0.002]*100] , (1,900))
+Thickness = np.reshape([[0.25]*100, [0.2]*100, [0.1]*100, [0.03]*100, [0.03]*100,[0.03]*100, [0.02]*100,[0.015]*100, [0.015]*100, [0.005]*100, [0.003]*100, [0.002]*100] , (1,1200))
 Thickness = np.transpose(Thickness)   #thickness of each grid cell
 Area = 0.01 * 0.01    #area of each grid
 Porosity = 0.8
@@ -24,44 +26,65 @@ Porosity = 0.8
 
 ch4_today = Full_Data[:, 29, 2]  #extract the CH4 concentration on day 29
 ch4_increase = (Rates[:, 29, 1] - Rates[:, 29, 2]) * 3600 * 24   #the difference between methanogenesis rate and methane oxidation rate is the net increase in CH4 concentration
-ch4_tomorrow = ch4_today + ch4_increase   #the CH4 concentration on day30 if there is no ebullition going on  
+ch4_hypotmr = ch4_today + ch4_increase   #the hypothetical CH4 concentration on day30 if there is no ebullition going on  
 
 # 2) Calculate the extra CH4 relative to the threshold concentration, which would be the ebullition efflux in my model framework
 Cth = 0.0014236   #threshold concentration, unit: mol L-1
-Diff = (ch4_tomorrow - Cth).reshape(900,1)     #the difference between theoretical CH4 concentration and threshold
+Diff = (ch4_hypotmr - Cth).reshape(1200,1)     #the difference between the hypothetical CH4 concentration and threshold
+Trigger = (Diff > 0) * 1                      # judge if and where the hypothetical CH4 concentration is above threshold, if yes, assign 1, if not, assign 0
 
 Volume = Thickness * Area * Porosity           #water volume of each of the 900 grid cells
-Ebl_cell = Diff * 1e3 * Volume * (Diff > 0) * 1    #convert to mol/m3, multiplied by the water volume of each cell to calculate the amount of CH4 removed by ebullition from each cell
+Ebl_cell = Diff * 1e3 * Volume * Trigger    #convert to mol/m3, multiplied by the water volume of each cell to calculate the amount of CH4 removed by ebullition from each cell
                                                     #only do the calculation for the cells with a positive concentration difference, as CH4 is only removed when the CH4 concentration is above threshold, unit: mol d-1
 
-Ebl = np.sum(Ebl_cell)   # add the CH4 removal from each cell together, i.e., the CH4 ebullition flux from the simulation domain, unit: mol d-1
-Ebl2 = Ebl * 1e3 / (0.1 * 0.1) #divided by the surface area of the simulation domain to convert to mmol m-2 d-1
+Ebl_domain = np.sum(Ebl_cell)   # add the CH4 removal from each cell together, i.e., the CH4 ebullition flux from the simulation domain, unit: mol d-1
+Ebl_areal = Ebl_domain * 1e3 / (0.1 * 0.1) #divided by the surface area of the simulation domain to convert to mmol m-2 d-1
 
 
-# 3) Plant-mediated CH4 transport
-ch4_rootlayer = Full_Data[300:400, 29, 2]   #extract the CH4 conc at the root layer
-tracer2_rootlayer = Full_Data[300:400, 29, 6]   #extract the tracer2 conc at the root layer
-Cth_tracer2 = 1e-4
-Trigger = (tracer2_rootlayer > Cth_tracer2) * 1        #judge if the tracer2 concentration is above the threshold, if yes, assign 1, if not assign 0
+#%% 3) Plant-mediated CH4 transport
+ch4_conc = Full_Data[:, 29, 2]   #extract the CH4 conc
+tracer2_conc = Full_Data[:, 29, 6]   #extract the tracer2 conc
+Cell_area = 0.01 * 0.01    #surface area of each cell, unit: m2
+Cell_vol = Cell_area * Thickness * 0.8    #water volume of each cell, 0.8 is the porosity
 
-Rate = 4.8e-8 * (ch4_rootlayer / (ch4_rootlayer + 1e-2)) * Trigger    #calculate the reaction rate for each root cell, the non-root cells would time a 0, unit: mol L-1 s-1
-MetFlux_plant_cell = Rate * 1e3 * (0.8 * 0.01 * 0.01 * 0.075) * 3600 * 24      # convert to areal flux per day, by multiplying the volume of water of the root cells, unit: mol d-1 cell-1
-MetFlux_plant = np.sum(MetFlux_plant_cell)    #calculate the sum of flux for the entire simulation domain
-MetFlux_plant2 = MetFlux_plant * 1e3 / (0.1 * 0.1)  #convert to mmol m-2 d-1
+print('Have you specified the correct mode yet????\n'*3)
 
-#Compile fluxes
-MetFlux = {'Total Flux': [Ebl2 + (-Mass[29,24]*1e3/0.01)], 'Diffusion': [- Mass[29,24]*1e3/0.01], 'Ebullition': [Ebl2]}
-MetFlux = pd.DataFrame(MetFlux)
+mode = 'Homo'
 
-print('Ebullition:\n' + str(MetFlux['Ebullition']))
-print('\nDiffusion:\n' + str(MetFlux['Diffusion']))
-print('\nTotal flux:\n' + str(MetFlux['Total Flux']))
+if mode == 'NO':
+   PlantF_areal = 0
+else:
+    if mode == 'Homo':
+        Cth_tracer2 = 1e-7             # the tracer2 threshold for plant-mediated CH4 transport for the Homo mode
+        Vmax = 1.4e-8                  # maximum reaction rate for the reaction simulating homogeneous plant-mediated CH4 transport
+        HSC = 1e-2
+    elif mode == 'Het':                 
+        Cth_tracer2 = 1e-4             # tracer2 threshold for the heterogeneous mode of root setup (1e-4 mol/L-1), use 1e-5 when doing sensitivity analysis with a high diffusion coefficient
+        Vmax = 9.3e-8                  # maximum rate for heterogeneous mode
+        HSC = 1e-2
+    
+    Trigger = (tracer2_conc > Cth_tracer2) * 1        #judge if the tracer2 concentration is above the threshold, if yes, assign 1, if not assign 0
+    Monod = ch4_conc / (ch4_conc + HSC)
+    PlantF_rate = Vmax * Monod * Trigger    #calculate the reaction rate for each root cell, the non-root cells would multiply 0, unit: mol L-1 s-1
+    PlantF_cell = PlantF_rate * 1e3 * (3600*24) * Volume      # the removal of CH4 from each cell for one day, mol cell-1 d-1
+    PlantF_domain = np.sum(PlantF_cell)               # the flux from the domain, mol d-1
+    PlantF_areal = PlantF_domain * 1e3 / (0.1 * 0.1)  #divided by the surface area of the simulation domain, convert to mmol m-2 d-1
+
+#%% Compile fluxes to calculate the total flux
+import pandas as pd
+MetDiffusion = - Mass[29,27]*1e3/0.01   # the diffusion flux via sediment-air interface, unit: mmol m-2 d-1
+MetF_total = MetDiffusion + Ebl_areal + PlantF_areal
+
+MetF = {'Total Flux': MetF_total, 'Diffusion': MetDiffusion, 'Plant-mediated': PlantF_areal, 'Ebullition': Ebl_areal}
+MetF = pd.DataFrame(MetF, index = ['Flux'])
+print(MetF)
+
 
 
 
 #%%
 plt.plot(ch4_today.reshape(9,100).mean(axis = 1) * 1e3, depths, 'b-', label = 'CH4 day 29')
-plt.plot(ch4_tomorrow.reshape(9,100).mean(axis = 1) * 1e3, depths, 'b--', label = 'theorectical CH4')
+plt.plot(ch4_hypotmr.reshape(9,100).mean(axis = 1) * 1e3, depths, 'b--', label = 'theorectical CH4')
 plt.plot( [Cth*1e3]*9, depths, 'r-', label = 'threshold')
 plt.legend(loc = 0)
 plt.xlabel('CH4 concentration (mM)')
@@ -225,41 +248,6 @@ plt.xlabel('Column ID')
 plt.ylabel('CH4 flux (mol m-2 d-1)')
 
 
-#%% compile and plot the methane fluxes
-import seaborn as sns
-# TOTAL flux
-F_ch4 = [['NO','S',0.01050926],
-         ['NO','noS',0.0117369427],
-         ['NonHetO','S',0.00966693],
-         ['NonHetO','noS',0.00992513],
-         ['HetO','S',0.00951178],
-         ['HetO','noS',0.01000204]]
-
-F_ch4 = pd.DataFrame(F_ch4)
-F_ch4.columns = ['Group','Sorts','Value']
-
-
- #Diffusion
-D_ch4 = [['NO','S',0.00134243],
-         ['NO','noS',0.00128763],
-         ['NonHetO','S',0.00123589],
-         ['NonHetO','noS',0.000999004],
-         ['HetO','S',0.00120492],
-         ['HetO','noS',0.00100447]]
-
-D_ch4 = pd.DataFrame(D_ch4)
-D_ch4.columns = ['Group','Sorts','Value']
-
-
-#Ebullition
-E_ch4 = [['NO','S',0.0091668],
-         ['NO','noS',0.01045],
-         ['NonHetO','S',0.0084310],
-         ['NonHetO','noS',0.008926],
-         ['HetO','S',0.00830686],
-         ['HetO','noS',0.00899757]]
-E_ch4 = pd.DataFrame(E_ch4)
-E_ch4.columns = ['Group','Sorts','Value']
 
 #%% make the bar plot
 import seaborn as sns
@@ -283,11 +271,15 @@ plt.ylabel('CH4 Efflux (mmol m-2 d-1)')
 
 
 #%% plot all three fluxes of three O2 injection modes together
-labels = ['No O2 release', 'Homogeneity', 'Heterogeneity']
+
+subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
+
+labels = ['No O2 release'.translate(subscript), 'Homogeneity', 'Heterogeneity']
 NO = FluxCmpr[0,:]
 Homo = FluxCmpr[1,:]
 Het = FluxCmpr[2,:]
-x = np.array([0, 2, 4])
+x = np.array([0, 2, 4, 6])
 width = 0.25
 
 fig, ax = plt.subplots()
@@ -295,10 +287,11 @@ rects1 = ax.bar(x - 0.3, NO, width, label = labels[0], color = '#303030')
 rects2 = ax.bar(x, Homo, width, label = labels[1], color = '#24AEDB')
 rects3 = ax.bar(x + 0.3, Het, width, label = labels[2], color = '#D02F5E')
 
+
 xticklabs = []
 plt.legend(loc = 0)
-plt.ylabel('CH4 Flux (mmol m-2 d-1)')
-plt.xticks(np.array([0, 2, 4]), ['Total Flux', 'Interface diffusion', 'Ebullition'])
+plt.ylabel('CH4 Flux'.translate(subscript) + ' (mmol m-2 d-1)'.translate(superscript))
+plt.xticks(np.array([0, 2, 4, 6]), ['Total', 'Diffusion', 'Plant', 'Ebullition'])
 
 
 #%% plot all three fluxes under different S levels
@@ -319,3 +312,35 @@ xticklabs = []
 plt.legend(loc = 0)
 plt.ylabel('CH4 Flux (mmol m-2 d-1)')
 plt.xticks(np.array([0, 2, 4]), ['Total Flux', 'Interface diffusion', 'Ebullition'])
+
+
+
+#%% Convert data from Villa 2020 to parameterization of the Plant-mediated transport
+conductance = 2.7e-3   #conductance of CH4, unit: m d-1
+LAI = 2.78  #leaf area index, leaf area/ground area
+porosity = 0.8
+c_air = 0
+c_soil = 1e-3   #CH4 concentration in soil porewater, unit: mol L-1
+F_leafarea = conductance * (c_soil * 1e3 - c_air *1e3)   # the flux of CH4 dependent on the concentration gradient, unit: mol m-2(leaf area) d-1
+F_groundarea = F_leafarea * LAI   #flux converted to per ground area, unit:mol m-2(ground) d-1
+
+# convert the flux to concentration change in the soil cells
+domain_area = 0.1 * 0.1  #surface area of the simulation domain
+dz = 0.075   # thickness of the rooting zone
+vol_rootzone = domain_area * dz * porosity   # water volume of the rooting zone
+d_conc = F_groundarea * domain_area / vol_rootzone * 1e-3   # the change in CH4 concentration due to plant-mediated CH4 transport, unit: mol L-1 d-1
+d_conc = d_conc / 24 / 3600   #change in CH4 concentration at [CH4]=1e-3 mol L-1, unit: mol L-1 s-1
+
+v_max = d_conc * 10
+HSC = c_soil * 10
+
+
+# for heterogeneous setup, CH4 is removed only from the root cells
+cell_area = 0.01 * 0.01
+root_number = 20
+vol_rootcells = cell_area * dz * root_number * porosity
+d_conc_het = F_groundarea * domain_area / vol_rootcells * 1e-3
+d_conc_het = d_conc_het / 24/ 3600
+
+v_max_het = d_conc_het * 10
+HSC_het = c_soil * 10

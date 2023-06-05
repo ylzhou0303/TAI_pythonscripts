@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 #%%
-file_name = r"C:\Users\yz60069\TAI\TAI_fresh\TAI_wetlands-mas.dat"
+file_name = r"C:\Users\yz60069\TAI\TAI_fresh\TAI_wetland2-mas.dat"
 
 #step 1: extract the headers
 with open(file_name,'r') as inputFile:

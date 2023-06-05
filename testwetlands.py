@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Tue May 16 10:50:13 2023
+
+@author: YZ60069
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Wed Jul 20 14:52:04 2022
 
 @author: YZ60069
@@ -17,26 +24,23 @@ import statistics as st
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-
 import os
 os.chdir('C:/Users/yz60069/TAI/TAI_fresh')
 #os.chdir('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Marsh Interior/All inundated/ root')
 import scipy.io
-from scipy.stats import pearsonr
 #mat = scipy.io.loadmat('WaterTableData.mat')
 #%% specify the pflotran output structure
-nx = 10
-ny = 10
-nz = 9
+nx = 1
+ny = 1
+nz = 7
 ngrids = nx * ny * nz
-ntimepoint = 16
+ntimepoint = 6
 
 
 #%% import data
-nvars = 8;  #number of variables that I want to investigate
+nvars = 3;  #number of variables that I want to investigate
 Full_Data = np.empty( shape = (ngrids,ntimepoint,nvars), dtype = np.float32)
-Var_str = {0: 'Liquid Saturation', 1: 'Total O2(aq) [M]', 2: 'Total CH4(aq) [M]', 3: 'Total DOM1 [M]', 4: 'Total SO4-- [M]',
-           5: 'Total H2S(aq) [M]', 6: 'Total Tracer2 [M]', 7: 'Total Tracer3 [M]'}
+Var_str = {0: 'Liquid Saturation', 1: 'Total O2(aq) [M]', 2: 'Total CH4(aq) [M]'}
 # the dictionary in which the variable ID is coupled with the variable name
 
 
@@ -52,11 +56,11 @@ for var_id in range(0,nvars):
     for i in range(0,ntimepoint):
        
         if i < 10:
-           file_name = 'TAI_wetland2-00' + str(i) + '.tec'
+           file_name = 'testwetlands-00' + str(i) + '.tec'
         elif (i == 10 or i > 10) and i < 100:
-           file_name = 'TAI_wetland2-0' + str(i) + '.tec'
+           file_name = 'testwetlands-0' + str(i) + '.tec'
         elif (i == 100 or i > 100) and i < 1000:
-           file_name = 'TAI_wetlands2-' + str(i) + '.tec'
+           file_name = 'testwetlands-' + str(i) + '.tec'
         
         with open(file_name,'r') as inputFile:
             read_lines = inputFile.readlines()
@@ -94,30 +98,37 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 2 #specify which variable to plot
+var_id = 1 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
-depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
+depths = Coord[0: ngrids :interval,2] - 1  #minus the depth of the soil profile
 
 if var_id == 1:
     conv = 1/2.5e-4*100
+elif var_id == 0:
+    conv = 1
 else:
     conv = 1e6
 
 plt.rcParams.update({'font.size': 15})
 
-for i in range(0,16,1):
-    conc = Full_Data[37 : ngrids : interval, i, var_id] #* conv
-    plt.plot(conc, depths)
+for i in range(0,5,1):
+    conc = Full_Data[0 : ngrids : interval, i, var_id] * conv
+    plt.plot(conc, depths, '-o')
     
 plt.ylabel('Soil Depth (m)')
 plt.xlabel(var_str[0:len(var_str)-4] + ' (uM)')
 #plt.xlim(-1e-5,1e-3)
-#plt.xlabel('%O2 sat')
+#plt.xlabel('water saturation')
+#plt.xlabel('O2 sat%')
 #plt.xticks(np.arange(0, 2e-4, step = 5e-5))   
 #plt.xticks(np.arange(5.8e-4, 6.2e-4, step = 1e-5)) 
-# plt.ylim(-0.02,0)
+#plt.ylim(-1,-0.05)
 #plt.xlim([1990,2010])
+
+#%%
+plt.plot(no_liquidloss[0:ngrids:interval, 5, 1], depths, 'r-')
+plt.plot(with_liquidloss[0:ngrids:interval, 5, 1], depths, 'b-')
 
 #%% plot the time series of the variable
 var_id = 2
@@ -158,9 +169,14 @@ plt.rcParams.update({'font.size': 12})
 
 
 #%% save data
-filename = 'NO.pickle'
-with open('' + filename, 'wb') as handle:
-    pickle.dump([Full_Data, depths, Mass_df, Rates], handle)
+filename = 'OxyHet.pickle'
+with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Marsh Interior/' + filename, 'wb') as handle:
+    pickle.dump([Full_Data, depths, variable_list_cor, mass_bal], handle)
+
+
+#%% import field data
+import pandas
+FieldData = pandas.read_csv('C:\MBL\Research\PFLOTRAN DATA\pflotran outputs\OxyHet\FieldData_Jul_MI.csv')
 
 
 
@@ -169,22 +185,11 @@ import pickle
 filename = 'growing_season.pickle'
 with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + filename, 'rb') as handle:
     Growing_Season_CB = pickle.load(handle)
- 
-
-#%%
-Data_NO = Full_Data
-
-#%%      
-Data_Homo = Full_Data
-
-
-#%%
-Data_Het = Full_Data
-
+       
 
 #%% Calculate and Plot the mean profiles of different O2 injection modes
 # Calculate the mean profiles
-t = 15       #specify the time point, here extract the data on day 30
+t = 30        #specify the time point, here extract the data on day 30
 MP_NO = np.zeros((9,6), dtype = float)
 MP_Homo = np.zeros((9,6), dtype = float)
 MP_Het = np.zeros((9,6), dtype = float)
@@ -205,11 +210,11 @@ if var_id == 1:
 else:
     conv = 1e6
 
-y = depths[1:11]*100   #convert depth values to cm
+y = depths[1:8]*100   #convert depth values to cm
 
-plt.plot(MP_NO[1:11, var_id] * conv, y, '-', color ='#303030', label = 'no O2 release')  #convert depth to cm
-plt.plot(MP_Homo[1:11, var_id] * conv, y, '-', color = '#24AEDB', label = 'Homogeneity')
-plt.plot(MP_Het[1:11, var_id] * conv, y, '-', color = '#D02F5E', label = 'Heterogeneity')
+plt.plot(MP_NO[1:8, var_id] * conv, y, '-', color ='#303030', label = 'no O2 release')  #convert depth to cm
+plt.plot(MP_Homo[1:8, var_id] * conv, y, '-', color = '#24AEDB', label = 'Homogeneity')
+plt.plot(MP_Het[1:8, var_id] * conv, y, '-', color = '#D02F5E', label = 'Heterogeneity')
 
 subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
@@ -230,13 +235,10 @@ plt.ylabel('Depth(cm)')
 plt.legend(loc = 0)
 
 #%% compile the species concentration at the root layer
-ConcCmpr = np.zeros((4,6), dtype = float)
+ConcCmpr = np.zeros((3,6), dtype = float)
 ConcCmpr[0,] = MP_NO[3,]
 ConcCmpr[1,] = MP_Homo[3,]
 ConcCmpr[2,] = MP_Het[3,]
-
-#%% Calculate the percentage difference between Het and Homo
-ConcCmpr[3,] = (ConcCmpr[1,] - ConcCmpr[2,]) / ConcCmpr[1,] * 100
 
 #%% Compile the CH4 fluxes
 FluxCmpr = np.array([MetF_NO, MetF_Homo, MetF_Het]).reshape(3,4)
@@ -609,3 +611,19 @@ plt.ylabel('CH4 umol/L')
 x = Rates[i_start:i_end, t, 1]
 y = ch4_conc
 plt.plot(x, y, 'ro')
+
+
+#%% van Genuchten curve
+theta_r = 0.1
+theta_s = 1
+m = 0.3
+alpha = 1e-2
+n = 1 / (1 - m)
+
+h = np.arange(1, 1e9, 100)
+theta = np.power([1 + np.power(alpha * np.array(h), n)], -m) * (theta_s - theta_r) + theta_r
+y = theta[0,:]
+plt.xscale('log')
+plt.plot(h, y)
+
+

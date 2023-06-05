@@ -17,7 +17,7 @@ ny = 10
 nz = 9
 
 
-var_id = 6
+var_id = 1
 var_str = Var_str[var_id]
 layer = 6
 
@@ -29,7 +29,7 @@ if var_id == 1:
 else:
     conv = 1e6
 
-M = Full_Data[i_start:i_end, 30, var_id]  * conv  #extract the data to be inevestigated, by specifying the layer, timepoint, and variable id
+M = Full_Data[i_start:i_end, 15, var_id]  * conv  #extract the data to be inevestigated, by specifying the layer, timepoint, and variable id
 A = M.reshape(nx, ny)      #this is a 10*10matrix, representing the view from top of the soil grids
 B = np.flipud(A)   #flip upside down the matrix so that the grids with smaller y coordinates are at the bottom
                    #same as in the field
@@ -58,6 +58,9 @@ elif var_id == 4:
     titletxt = 'SO4'.translate(subscript) + '2-(μM)'.translate(superscript)
 elif var_id == 5:
     titletxt = 'H2S(aq) (μM)'.translate(subscript)
+elif var_id == 6:
+    titletxt = 'Tracer2 (μM)'.translate(subscript)
+
 
 plt.title(titletxt)
 

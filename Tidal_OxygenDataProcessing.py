@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Thu May 18 18:21:56 2023
+
+@author: YZ60069
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Wed Jul 20 14:52:04 2022
 
 @author: YZ60069
@@ -17,26 +24,23 @@ import statistics as st
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-
 import os
-os.chdir('C:/Users/yz60069/TAI/TAI_fresh')
+os.chdir('C:/Users/yz60069/TAI/TAI_tides')
 #os.chdir('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Marsh Interior/All inundated/ root')
 import scipy.io
-from scipy.stats import pearsonr
-#mat = scipy.io.loadmat('WaterTableData.mat')
 #%% specify the pflotran output structure
 nx = 10
 ny = 10
 nz = 9
 ngrids = nx * ny * nz
-ntimepoint = 16
+ntimepoint = 1057
 
 
 #%% import data
-nvars = 8;  #number of variables that I want to investigate
+nvars = 7;  #number of variables that I want to investigate
 Full_Data = np.empty( shape = (ngrids,ntimepoint,nvars), dtype = np.float32)
 Var_str = {0: 'Liquid Saturation', 1: 'Total O2(aq) [M]', 2: 'Total CH4(aq) [M]', 3: 'Total DOM1 [M]', 4: 'Total SO4-- [M]',
-           5: 'Total H2S(aq) [M]', 6: 'Total Tracer2 [M]', 7: 'Total Tracer3 [M]'}
+           5: 'Total H2S(aq) [M]', 6: 'Total Tracer2 [M]'}
 # the dictionary in which the variable ID is coupled with the variable name
 
 
@@ -49,14 +53,14 @@ for var_id in range(0,nvars):
     
     
     
-    for i in range(0,ntimepoint):
+    for i in range(720,ntimepoint):
        
         if i < 10:
-           file_name = 'TAI_wetland2-00' + str(i) + '.tec'
+           file_name = 'Tidal_Oxygen-00' + str(i) + '.tec'
         elif (i == 10 or i > 10) and i < 100:
-           file_name = 'TAI_wetland2-0' + str(i) + '.tec'
+           file_name = 'Tidal_Oxygen-0' + str(i) + '.tec'
         elif (i == 100 or i > 100) and i < 1000:
-           file_name = 'TAI_wetlands2-' + str(i) + '.tec'
+           file_name = 'Tidal_Oxygen-' + str(i) + '.tec'
         
         with open(file_name,'r') as inputFile:
             read_lines = inputFile.readlines()
@@ -94,36 +98,58 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 2 #specify which variable to plot
+var_id = 1 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
 
 if var_id == 1:
     conv = 1/2.5e-4*100
+elif var_id == 0:
+    conv = 1
 else:
     conv = 1e6
 
 plt.rcParams.update({'font.size': 15})
 
-for i in range(0,16,1):
-    conc = Full_Data[37 : ngrids : interval, i, var_id] #* conv
+for i in range(0,336,1):
+    conc = Full_Data[61 : ngrids : interval, i, var_id] * conv
     plt.plot(conc, depths)
     
 plt.ylabel('Soil Depth (m)')
 plt.xlabel(var_str[0:len(var_str)-4] + ' (uM)')
 #plt.xlim(-1e-5,1e-3)
+#plt.xlabel('Water Saturation')
 #plt.xlabel('%O2 sat')
 #plt.xticks(np.arange(0, 2e-4, step = 5e-5))   
 #plt.xticks(np.arange(5.8e-4, 6.2e-4, step = 1e-5)) 
 # plt.ylim(-0.02,0)
 #plt.xlim([1990,2010])
 
+#%% compare O2 profiles between no tide and with tide
+var_id = 1
+if var_id == 1:
+    conv = 1/2.5e-4*100
+elif var_id == 0:
+    conv = 1
+else:
+    conv = 1e6
+    
+x1 = Data1[0:ngrids:interval, 44, var_id] * conv
+x2 = Data2[0:ngrids:interval, 44, var_id] * conv
+
+plt.plot(x1, depths, 'r-', label = 'no tide')
+plt.plot(x2, depths, 'b-', label = 'water removed')
+plt.legend(loc = 0)
+plt.xlabel('% O2 sat')
+plt.ylabel('Depth (m)')
+
+
 #%% plot the time series of the variable
-var_id = 2
-plt.plot(Full_Data[325, 0:30, var_id])   #bigger row number means closer to the soil surface
+var_id = 1
+plt.plot(Full_Data[325, 0:336, var_id] * conv)   #bigger row number means closer to the soil surface
 ax=plt.gca()
-ax.set_xlabel('Time (day)')
+ax.set_xlabel('Time (hour)')
 ax.set_ylabel(var_str)
 plt.rcParams.update({'font.size': 13})
 
@@ -158,9 +184,14 @@ plt.rcParams.update({'font.size': 12})
 
 
 #%% save data
-filename = 'NO.pickle'
-with open('' + filename, 'wb') as handle:
-    pickle.dump([Full_Data, depths, Mass_df, Rates], handle)
+filename = 'OxyHet.pickle'
+with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Marsh Interior/' + filename, 'wb') as handle:
+    pickle.dump([Full_Data, depths, variable_list_cor, mass_bal], handle)
+
+
+#%% import field data
+import pandas
+FieldData = pandas.read_csv('C:\MBL\Research\PFLOTRAN DATA\pflotran outputs\OxyHet\FieldData_Jul_MI.csv')
 
 
 
@@ -169,22 +200,11 @@ import pickle
 filename = 'growing_season.pickle'
 with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + filename, 'rb') as handle:
     Growing_Season_CB = pickle.load(handle)
- 
-
-#%%
-Data_NO = Full_Data
-
-#%%      
-Data_Homo = Full_Data
-
-
-#%%
-Data_Het = Full_Data
-
+       
 
 #%% Calculate and Plot the mean profiles of different O2 injection modes
 # Calculate the mean profiles
-t = 15       #specify the time point, here extract the data on day 30
+t = 30        #specify the time point, here extract the data on day 30
 MP_NO = np.zeros((9,6), dtype = float)
 MP_Homo = np.zeros((9,6), dtype = float)
 MP_Het = np.zeros((9,6), dtype = float)
@@ -205,11 +225,11 @@ if var_id == 1:
 else:
     conv = 1e6
 
-y = depths[1:11]*100   #convert depth values to cm
+y = depths[1:8]*100   #convert depth values to cm
 
-plt.plot(MP_NO[1:11, var_id] * conv, y, '-', color ='#303030', label = 'no O2 release')  #convert depth to cm
-plt.plot(MP_Homo[1:11, var_id] * conv, y, '-', color = '#24AEDB', label = 'Homogeneity')
-plt.plot(MP_Het[1:11, var_id] * conv, y, '-', color = '#D02F5E', label = 'Heterogeneity')
+plt.plot(MP_NO[1:8, var_id] * conv, y, '-', color ='#303030', label = 'no O2 release')  #convert depth to cm
+plt.plot(MP_Homo[1:8, var_id] * conv, y, '-', color = '#24AEDB', label = 'Homogeneity')
+plt.plot(MP_Het[1:8, var_id] * conv, y, '-', color = '#D02F5E', label = 'Heterogeneity')
 
 subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
@@ -230,13 +250,10 @@ plt.ylabel('Depth(cm)')
 plt.legend(loc = 0)
 
 #%% compile the species concentration at the root layer
-ConcCmpr = np.zeros((4,6), dtype = float)
+ConcCmpr = np.zeros((3,6), dtype = float)
 ConcCmpr[0,] = MP_NO[3,]
 ConcCmpr[1,] = MP_Homo[3,]
 ConcCmpr[2,] = MP_Het[3,]
-
-#%% Calculate the percentage difference between Het and Homo
-ConcCmpr[3,] = (ConcCmpr[1,] - ConcCmpr[2,]) / ConcCmpr[1,] * 100
 
 #%% Compile the CH4 fluxes
 FluxCmpr = np.array([MetF_NO, MetF_Homo, MetF_Het]).reshape(3,4)

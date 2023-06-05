@@ -10,7 +10,7 @@ import random
 import numpy as np
 nx = 10
 ny = 10
-nroots = 90
+nroots = 20
 
 #Define matrices of X and Y coordinates
 XCoords = np.zeros (shape = (nx,ny))
@@ -31,7 +31,7 @@ i = 0
 while np.nan in RootGrids:
     r = random.randint(0, nx*ny-1)
     if (r not in RootGrids):
-        #if r not in EdgeGrids:
+        if (r not in EdgeGrids):
         #to avoid repeatition, and to avoid roots being at the edge (because the roots at the edge cannot exchange with the neighboring grid, which is unrealistic)
             RootGrids[i] = r
             i = i + 1
@@ -64,5 +64,13 @@ for i in range(nroots):
 Strs2 = ''
 for i in range(nroots):
     
-    temp_str = ('SOURCE_SINK ROL_het' + str(i+1) + '\n\tFLOW_CONDITION ROL_het\n\tTRANSPORT_CONDITION root\n\tREGION root' + str(i+1) + '\nEND')
+    temp_str = ('SOURCE_SINK ROL_het' + str(i+1) + '\n\tFLOW_CONDITION ROL_het\n\tTRANSPORT_CONDITION O2_inj\n\tREGION root' + str(i+1) + '\nEND')
     Strs2 = Strs2 + '\n\n' + temp_str
+    
+    
+#%%
+Strs3 = ''
+for i in range(nroots):
+    
+    temp_str = ('SOURCE_SINK Tracer2_inj' + str(i+1) + '\n\tFLOW_CONDITION ROL_het\n\tTRANSPORT_CONDITION Tracer3_inj\n\tREGION root' + str(i+1) + '\nEND')
+    Strs3 = Strs3 + '\n\n' + temp_str
