@@ -36,13 +36,14 @@ K_df = pd.DataFrame(K_df)
 K = np.array(K_df)
 
 
+K_O2 = 3.75E-5   # Monod Half saturation constant for O2
 
 # 2. data frame for monod half saturation constants
-HSC_df = {'DOMAer': [8e-6, np.nan, 4e-3, np.nan, np.nan],
+HSC_df = {'DOMAer': [K_O2, np.nan, 4e-3, np.nan, np.nan],
           'Met': [np.nan, np.nan, 4e-3, np.nan, np.nan],
-          'MetOxi':[8e-6, 5e-4, np.nan, np.nan, np.nan],
+          'MetOxi':[K_O2, 5e-4, np.nan, np.nan, np.nan],
           'SulRed': [np.nan, np.nan, 4e-3, 1e-4, np.nan],
-          'SulOxi': [8e-6, np.nan, np.nan, np.nan, 1e-3],
+          'SulOxi': [K_O2, np.nan, np.nan, np.nan, 1e-3],
           'MetOxiSul':[np.nan, 5e-4, np.nan, 1e-4, np.nan]}   #HSC: half saturation constant
 
 HSC_df = pd.DataFrame(HSC_df)
@@ -104,7 +105,7 @@ Rates = rate_calc(K, HSC, I, Conc)
 #%% verify the rates calculation
 reac = 1
 grid = 10
-t = 15
+t = 10
 
 oxygen = Full_Data[grid,t,1]
 dom = Full_Data[grid,t,3]
@@ -134,11 +135,11 @@ x_h2s = np.arange(0, 3e-2, 1e-4)
 
 
 #%% 1) DOM aerobic decomposition dependence on O2 conc
-t = 15  #timepoint
+t = 10  #timepoint
 var_id = 1
 reac_id = 0
 
-K_o2 = 8e-6
+K_o2 = 3.75e-5
 conv = 1/2.5e-4*100
 #o2_injection = np.zeros(100)
 #o2_injection[[13,17,26,27,28,46,52,57,58,61,65,72,75,81,82]] = 1.3 * 1e3 *(1e-8/15/3600)/(0.01*0.01*0.075*1e3) * 1800  #concentration change caused by O2 injection, unit: mol L-1 s-1
@@ -150,20 +151,20 @@ plt.xlabel('O2% sat')
 plt.ylabel('Monod')
 
 
-conc = Full_Data[300:400, t, var_id]
+conc = Data_Het[300:400, t, var_id]
 rates = conc / (conc + K_o2)
-plt.plot(conc *conv, rates, 'ro')
+plt.plot(conc *conv, rates, 'ro', label = 'Rate of each cell')
 
 # the mean of actual rate
-plt.plot(np.mean(conc) * conv, np.mean(rates), 'r*', markersize = 10, label = 'mean rate([O2])')
+plt.plot(np.mean(conc) * conv, np.mean(rates), 'r*', markersize = 10, label = 'Mean rate')
 
 # the rate calculated by mean of concentration (not considering the spatial heterogeneity of O2)
-plt.plot(np.mean(conc) * conv, np.mean(conc)/(np.mean(conc) + K_o2), 'k*', markersize = 10, label = 'rate(mean [O2])')
+plt.plot(np.mean(conc) * conv, np.mean(conc)/(np.mean(conc) + K_o2), 'k*', markersize = 10, label = 'Rate of mean O2')
 
 
 
 # the homogeneity mode
-o2_homo = np.mean(Data_Homo[300:400, timepoint, var_id])
+o2_homo = np.mean(Data_Homo[300:400, t, var_id])
 plt.plot(o2_homo * conv, o2_homo/(o2_homo + K_o2), 'b*', markersize = 10, label = 'Homo rate')
 
 # Calculate the Pearson's correlation coefficient to assess the linearity/nonlinearity
@@ -171,17 +172,37 @@ Pcoef1 = pearsonr(conc, rates)
 Pcoef2 = pearsonr(x_o2, y)
 
 
-#print(Pcoef1[0], Pcoef2[0])
-plt.text(60, 0.6, 'K_O2=' + str(K_o2) + 'M\n' + 'Pearsons coef\n' + str(round(Pcoef1[0],2)))
+print(Pcoef1[0], Pcoef2[0])
+plt.text(60, 0.55, 'K_O2=' + str(K_o2) + ' M\n' + 'Pearsons coef\n' + str(round(Pcoef1[0],2)))
+plt.legend(loc = 0)
+plt.xlim(-5,102)
+plt.ylim(0,1)
+
+#%%
+conc = Full_Data[300:400, 10, 5]
+rates = conc / (conc + 1e-3)
+plt.plot(conc, rates, 'bo')
+
+#%% Calculate the O2 consumption rate
+
+R_o2_Het = Rates_Het[300:400, t, 0] + Rates_Het[300:400, t, 2] + Rates_Het[300:400, t, 4]   # the sum of DOC aerobic decomposition rate, CH4 aerobic oxidation rate and H2S oxidation rate
+conc = Data_Het[300:400, t, 1]
+Pcoef = pearsonr(conc, R_o2_Het)
+plt.plot(conc / 2.5e-4 * 100, R_o2_Het, 'bo', label = 'Het rate of each cell')
+
+plt.plot(np.mean(conc) / 2.5e-4 * 100, np.mean(R_o2_Het), 'b*', label = 'Het mean rate')
+
+R_o2_Homo = Rates_Homo[300:400, t, 0] + Rates_Homo[300:400, t, 2] + Rates_Homo[300:400, t, 4]
+conc = Data_Homo[300:400, t, 1]
+plt.plot(conc / 2.5e-4 * 100, R_o2_Homo, 'r*', label = 'Homo rate')
+
+plt.xlim(-5,60)
+plt.xlabel('% O2 sat')
+plt.ylabel('O2 consumption rate (M s-1)')
 plt.legend(loc = 0)
 
 
-#%% Calculate the O2 consumption rate
-R_o2 = Rates[300:400, t, 0] + Rates[300:400, t, 2] + Rates[300:400, t, 4]   # the sum of DOC aerobic decomposition rate, CH4 aerobic oxidation rate and H2S oxidation rate
-plt.plot(conc, R_o2, 'bo')
-
-Pcoef = pearsonr(conc, R_o2)
-
+plt.text(30, 1.5e-8, 'K_O2=' + str(K_o2) + ' [M]\n' + 'Pearsons correlation\ncoefficient ' + str(round(Pcoef[0],2)))
 
 
 #%%

@@ -29,7 +29,7 @@ nx = 10
 ny = 10
 nz = 9
 ngrids = nx * ny * nz
-ntimepoint = 16
+ntimepoint = 11
 
 
 #%% import data
@@ -56,7 +56,7 @@ for var_id in range(0,nvars):
         elif (i == 10 or i > 10) and i < 100:
            file_name = 'TAI_wetland2-0' + str(i) + '.tec'
         elif (i == 100 or i > 100) and i < 1000:
-           file_name = 'TAI_wetlands2-' + str(i) + '.tec'
+           file_name = 'TAI_wetland2-' + str(i) + '.tec'
         
         with open(file_name,'r') as inputFile:
             read_lines = inputFile.readlines()
@@ -94,7 +94,7 @@ Coord[:,2] = results['Z [m]']
 
 
 #%% Plot the depth profiles of the investigated variable for different timepoints
-var_id = 2 #specify which variable to plot
+var_id = 1 #specify which variable to plot
 var_str = Var_str[var_id]
 interval = nx * ny 
 depths = Coord[0: ngrids :interval,2] - 0.7  #minus the depth of the soil profile
@@ -106,8 +106,8 @@ else:
 
 plt.rcParams.update({'font.size': 15})
 
-for i in range(0,16,1):
-    conc = Full_Data[37 : ngrids : interval, i, var_id] #* conv
+for i in range(0,ntimepoint,1):
+    conc = Full_Data[37 : ngrids : interval, i, var_id] * conv    # 37 is a root cell
     plt.plot(conc, depths)
     
 plt.ylabel('Soil Depth (m)')
@@ -173,33 +173,41 @@ with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + 
 
 #%%
 Data_NO = Full_Data
+MetF_NO = MetF
+Rates_NO = Rates
 
 #%%      
 Data_Homo = Full_Data
+MetF_Homo = MetF
+Rates_Homo = Rates
 
 
 #%%
 Data_Het = Full_Data
+MetF_Het = MetF
+Rates_Het = Rates
 
 
 #%% Calculate and Plot the mean profiles of different O2 injection modes
 # Calculate the mean profiles
-t = 15       #specify the time point, here extract the data on day 30
-MP_NO = np.zeros((9,6), dtype = float)
-MP_Homo = np.zeros((9,6), dtype = float)
-MP_Het = np.zeros((9,6), dtype = float)
+t = 10       #specify the time point, here extract the data on day 30
+MP_NO = np.zeros((9,ntimepoint, 6), dtype = float)
+MP_Homo = np.zeros((9, ntimepoint, 6), dtype = float)
+MP_Het = np.zeros((9, ntimepoint, 6), dtype = float)
 
-for var_id in range(0,6):
-    #reshape the matrix of concentration to a 9*100 matrix, each row is the data of one soil layer containing 100 cells, and calculate the mean of all cells within the same layer
-    MP_NO[:,var_id] = Data_NO[:, t, var_id].reshape(9,100).mean(axis = 1)      
-    MP_Homo[:,var_id] = Data_Homo[:, t, var_id].reshape(9,100).mean(axis = 1)
-    MP_Het[:,var_id] = Data_Het[:, t, var_id].reshape(9,100).mean(axis = 1)
+for t in range(0, ntimepoint):
+    for var_id in range(0,6):
+        #reshape the matrix of concentration to a 9*100 matrix, each row is the data of one soil layer containing 100 cells, and calculate the mean of all cells within the same layer
+        MP_NO[:, t, var_id] = Data_NO[:, t, var_id].reshape(9,100).mean(axis = 1)      
+        MP_Homo[:, t, var_id] = Data_Homo[:, t, var_id].reshape(9,100).mean(axis = 1)
+        MP_Het[:,t, var_id] = Data_Het[:, t, var_id].reshape(9,100).mean(axis = 1)
 
 #%% Plot the profiles from different set up
 plt.rcParams.update({'font.size': 15})
-fig, ax = plt.subplots()
 
-var_id = 5   #choose which variable to plot
+t = 10
+var_id = 5
+ 
 if var_id == 1:
     conv = 1/2.5e-4*100
 else:
@@ -207,17 +215,18 @@ else:
 
 y = depths[1:11]*100   #convert depth values to cm
 
-plt.plot(MP_NO[1:11, var_id] * conv, y, '-', color ='#303030', label = 'no O2 release')  #convert depth to cm
-plt.plot(MP_Homo[1:11, var_id] * conv, y, '-', color = '#24AEDB', label = 'Homogeneity')
-plt.plot(MP_Het[1:11, var_id] * conv, y, '-', color = '#D02F5E', label = 'Heterogeneity')
+plt.plot(MP_NO[1:11, t, var_id] * conv, y, '-', color ='#303030', label = 'no O2 release'.translate(subscript))  #convert depth to cm
+plt.plot(MP_Homo[1:11, t, var_id] * conv, y, '-', color = '#24AEDB', label = 'Homogeneity')
+plt.plot(MP_Het[1:11, t, var_id] * conv, y, '-', color = '#D02F5E', label = 'Heterogeneity')
 
 subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
 
 if var_id == 1:
-    xlab = 'O2 saturation (%)'
+    xlab = 'O2 saturation (%)'.translate(subscript)
+    plt.xlim(-2,52)
 elif var_id == 2:
-    xlab = 'CH4(μM)'.translate(subscript)
+    xlab = 'CH4(μmol'.translate(subscript) + ' L-1)'.translate(superscript)
 elif var_id == 3:
     xlab = 'DOC (μM)'
 elif var_id == 4:
@@ -227,22 +236,55 @@ elif var_id == 5:
 
 plt.xlabel(xlab)
 plt.ylabel('Depth(cm)')
-plt.legend(loc = 0)
+if var_id == 1:
+    plt.legend(loc = 0)
+
+
+#%% Plot the time series of concentration at the rooting zone
+var_id = 5
+if var_id == 1:
+    conv = 1/2.5e-4*100
+else:
+    conv = 1e6
+    
+plt.plot(MP_NO[3, :, var_id] * conv, '-', color ='#303030', label = 'no O2 release'.translate(subscript))  #convert depth to cm
+plt.plot(MP_Homo[3, :, var_id] * conv, '-', color = '#24AEDB', label = 'Homogeneity')
+plt.plot(MP_Het[3, :, var_id] * conv, '-', color = '#D02F5E', label = 'Heterogeneity')
+
+if var_id == 1:
+    ylab = 'O2 saturation (%)'
+elif var_id == 2:
+    ylab = 'CH4(μmol'.translate(subscript) + ' L-1)'.translate(superscript)
+elif var_id == 3:
+    ylab = 'DOC (μM)'
+elif var_id == 4:
+    ylab = 'SO4'.translate(subscript) + '2-(μM)'.translate(superscript)
+elif var_id == 5:
+    ylab = 'H2S(aq) (μM)'.translate(subscript)
+
+plt.xlabel('Time (day)')
+plt.ylabel(ylab)
+
+if var_id == 1:
+    plt.legend(loc = 0)
 
 #%% compile the species concentration at the root layer
-ConcCmpr = np.zeros((4,6), dtype = float)
-ConcCmpr[0,] = MP_NO[3,]
-ConcCmpr[1,] = MP_Homo[3,]
-ConcCmpr[2,] = MP_Het[3,]
+ConcCmpr = np.zeros((4,5), dtype = float)
+ConcCmpr[0,0:5] = MP_NO[3,t,1:6]
+ConcCmpr[1,0:5] = MP_Homo[3,t,1:6]
+ConcCmpr[2,0:5] = MP_Het[3,t,1:6]
 
 #%% Calculate the percentage difference between Het and Homo
 ConcCmpr[3,] = (ConcCmpr[1,] - ConcCmpr[2,]) / ConcCmpr[1,] * 100
+
+
 
 #%% Compile the CH4 fluxes
 FluxCmpr = np.array([MetF_NO, MetF_Homo, MetF_Het]).reshape(3,4)
 FluxCmpr_df = pd.DataFrame(FluxCmpr)
 FluxCmpr_df.columns = ['Total Flux', 'Diffusion', 'Plant-mediated', 'Ebullition']
 FluxCmpr_df.index = ['NO', 'Homo', 'Het']
+
 
 
 
