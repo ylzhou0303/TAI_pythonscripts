@@ -120,7 +120,7 @@ plt.xlabel(var_str[0:len(var_str)-4] + ' (uM)')
 #plt.xlim([1990,2010])
 
 #%% plot the time series of the variable
-var_id = 2
+var_id = 1
 plt.plot(Full_Data[325, 0:30, var_id])   #bigger row number means closer to the soil surface
 ax=plt.gca()
 ax.set_xlabel('Time (day)')
@@ -211,7 +211,7 @@ var_id = 5
 if var_id == 1:
     conv = 1/2.5e-4*100
 else:
-    conv = 1e6
+    conv = 1e3
 
 y = depths[1:11]*100   #convert depth values to cm
 
@@ -219,20 +219,21 @@ plt.plot(MP_NO[1:11, t, var_id] * conv, y, '-', color ='#303030', label = 'no O2
 plt.plot(MP_Homo[1:11, t, var_id] * conv, y, '-', color = '#24AEDB', label = 'Homogeneity')
 plt.plot(MP_Het[1:11, t, var_id] * conv, y, '-', color = '#D02F5E', label = 'Heterogeneity')
 
-subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
+sub = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+sup = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
 
 if var_id == 1:
-    xlab = 'O2 saturation (%)'.translate(subscript)
+    xlab = 'O2'.translate(sub) +' %Air Sat.'.translate(sub)
     plt.xlim(-2,52)
 elif var_id == 2:
-    xlab = 'CH4(μmol'.translate(subscript) + ' L-1)'.translate(superscript)
+    xlab = 'CH4 (aq, mmol'.translate(sub) + ' L-1)'.translate(sup)
 elif var_id == 3:
-    xlab = 'DOC (μM)'
+    xlab = 'DOC (mmol' + ' L-1)'.translate(sup)
 elif var_id == 4:
-    xlab = 'SO4'.translate(subscript) + '2-(μM)'.translate(superscript)
-elif var_id == 5:
-    xlab = 'H2S(aq) (μM)'.translate(subscript)
+    xlab = 'SO4'.translate(sub) + '2- (mmol L-1)'.translate(sup)
+    plt.xlim(4.9, 9.2)
+elif var_id == 5:    
+    xlab = 'H2S(aq,'.translate(sub)  + ' mmol L-1)'.translate(sup)
 
 plt.xlabel(xlab)
 plt.ylabel('Depth(cm)')
@@ -241,11 +242,11 @@ if var_id == 1:
 
 
 #%% Plot the time series of concentration at the rooting zone
-var_id = 5
+var_id = 4
 if var_id == 1:
     conv = 1/2.5e-4*100
 else:
-    conv = 1e6
+    conv = 1e3
     
 plt.plot(MP_NO[3, :, var_id] * conv, '-', color ='#303030', label = 'no O2 release'.translate(subscript))  #convert depth to cm
 plt.plot(MP_Homo[3, :, var_id] * conv, '-', color = '#24AEDB', label = 'Homogeneity')
@@ -254,13 +255,13 @@ plt.plot(MP_Het[3, :, var_id] * conv, '-', color = '#D02F5E', label = 'Heterogen
 if var_id == 1:
     ylab = 'O2 saturation (%)'
 elif var_id == 2:
-    ylab = 'CH4(μmol'.translate(subscript) + ' L-1)'.translate(superscript)
+    ylab = 'CH4(aq, mmol'.translate(sub) + ' L-1)'.translate(sup)
 elif var_id == 3:
-    ylab = 'DOC (μM)'
+    ylab = 'DOC (mmol L-1)'.translate(sup)
 elif var_id == 4:
-    ylab = 'SO4'.translate(subscript) + '2-(μM)'.translate(superscript)
+    ylab = 'SO4'.translate(sub) + '2-(μM)'.translate(sup)
 elif var_id == 5:
-    ylab = 'H2S(aq) (μM)'.translate(subscript)
+    ylab = 'H2S(aq, mmol L-1)'.translate(sub)
 
 plt.xlabel('Time (day)')
 plt.ylabel(ylab)

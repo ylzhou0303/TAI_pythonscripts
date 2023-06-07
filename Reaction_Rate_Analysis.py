@@ -31,12 +31,12 @@ from scipy.stats import pearsonr
 # 1. data frame for maximum reaction rate constants
 # standard runs: K_df = {'DOMAer': [2e-8], 'Met': [5e-10], 'MetOxi': [4e-9], 'SulRed': [5e-9],'SulOxi': [1e-7]}
 
-K_df = {'DOMAer': [1e-7], 'Met': [4e-10], 'MetOxi': [5e-10], 'SulRed': [6.24e-9],'SulOxi': [5e-7], 'MetOxiSul': [2e-10]}
+K_df = {'DOMAer': [1e-8], 'Met': [4e-10], 'MetOxi': [5e-10], 'SulRed': [6.24e-9],'SulOxi': [5e-7], 'MetOxiSul': [2e-10]}
 K_df = pd.DataFrame(K_df)
 K = np.array(K_df)
 
 
-K_O2 = 3.75E-5   # Monod Half saturation constant for O2
+K_O2 = 8e-6   # Monod Half saturation constant for O2
 
 # 2. data frame for monod half saturation constants
 HSC_df = {'DOMAer': [K_O2, np.nan, 4e-3, np.nan, np.nan],
@@ -139,15 +139,20 @@ t = 10  #timepoint
 var_id = 1
 reac_id = 0
 
-K_o2 = 3.75e-5
+K_o2 = 8e-6
 conv = 1/2.5e-4*100
 #o2_injection = np.zeros(100)
 #o2_injection[[13,17,26,27,28,46,52,57,58,61,65,72,75,81,82]] = 1.3 * 1e3 *(1e-8/15/3600)/(0.01*0.01*0.075*1e3) * 1800  #concentration change caused by O2 injection, unit: mol L-1 s-1
 
+
+sub = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+sup = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
+
+plt.rcParams.update({'font.size': 15})
 # the Monod curve
 y = x_o2 / (x_o2 + K_o2)
 plt.plot(x_o2 * conv, y, 'k--')
-plt.xlabel('O2% sat')
+plt.xlabel('O2 (%Air Sat.)'.translate(sub))
 plt.ylabel('Monod')
 
 
@@ -173,16 +178,71 @@ Pcoef2 = pearsonr(x_o2, y)
 
 
 print(Pcoef1[0], Pcoef2[0])
-plt.text(60, 0.55, 'K_O2=' + str(K_o2) + ' M\n' + 'Pearsons coef\n' + str(round(Pcoef1[0],2)))
+#plt.text(60, 0.55, 'K_O2=' + str(K_o2) + ' M\n' + 'Pearsons coef\n' + str(round(Pcoef1[0],2)))
+#plt.text(55, 0.55, 'O2 injection=\n60' +' mmol m-2 d-1'.translate(sup) + '\nPearsons coef ' + str(round(Pcoef1[0],2)))
+plt.text(55, 0.55, 'μmax=\n1e-6' +' mol L-1 s-1'.translate(sup) + '\nLinearity ' + str(round(Pcoef1[0],2)))
 plt.legend(loc = 0)
 plt.xlim(-5,102)
 plt.ylim(0,1)
+
+#%% Plot the time series of mean reaction rates of Het vs Homo
+Monod_t = np.zeros((ntimepoint,3), dtype = float)
+
+K_O2 = 1e-4
+for t in range(0,ntimepoint):
+    conc_o2 = Data_NO[300:400, t, 1]
+    Monod_t[t,0] = np.mean(conc_o2 / (conc_o2 + K_O2))
+    
+    conc_o2 = Data_Homo[300:400, t, 1]
+    Monod_t[t,1] = np.mean(conc_o2 / (conc_o2 + K_O2))
+    
+    conc_o2 = Data_Het[300:400, t, 1]
+    Monod_t[t,2] = np.mean(conc_o2 / (conc_o2 + K_O2))
+
+
+plt.plot(Monod_t[:,0], '-', color ='#303030', label = 'no O2 release'.translate(subscript))
+plt.plot(Monod_t[:,1], '-',  color = '#24AEDB', label = 'Homogeneity')
+plt.plot(Monod_t[:,2], '-', color = '#D02F5E', label = 'Heterogeneity')
+
+plt.legend(loc = 'upper left')
+plt.xlabel('Time (day)')
+plt.ylabel('Monod')
+plt.ylim(0,0.1)
+
 
 #%%
 conc = Full_Data[300:400, 10, 5]
 rates = conc / (conc + 1e-3)
 plt.plot(conc, rates, 'bo')
 
+
+#%% Plot the theoretical Monod curve with different K and umax
+x = x_o2
+conv = 1 / 2.5e-4 * 100
+y1 = x_o2 / (x_o2 + 8e-6)
+y2 = x_o2 / (x_o2 + 3.75e-5)
+y3 = x_o2 / (x_o2 + 1e-4) 
+plt.plot(x*conv, y1, 'b-', label = 'K(O2) = 8e-6 [M]')
+plt.plot(x*conv, y2, 'k-', label = 'K(O2) = 3.75e-5 [M]')
+plt.plot(x*conv, y3, 'r-', label = 'K(O2) = 1e-4 [M]')
+
+plt.legend(loc = 0)
+plt.xlabel('O2 %Air Sat.'.translate(sub))
+plt.ylabel('Monod')
+
+#%%
+x = x_o2
+conv = 1 / 2.5e-4 * 100
+y1 = 5e-8 * x_o2 / (x_o2 + 8e-6)
+y2 = 1e-7 * x_o2 / (x_o2 + 8e-6)
+y3 = 5e-7 * x_o2 / (x_o2 + 8e-6) 
+plt.plot(x*conv, y1, 'b-', label = 'μmax=10'+'-8 mol L-1 s-1'.translate(sup))
+plt.plot(x*conv, y2, 'k-', label = 'μmax=10'+'-7 mol L-1 s-1'.translate(sup))
+plt.plot(x*conv, y3, 'r-', label = 'μmax=10'+'-6 mol L-1 s-1'.translate(sup))
+
+plt.legend(loc = 0)
+plt.xlabel('O2 %Air Sat.'.translate(sub))
+plt.ylabel('Rate (mol L-1 s-1)'.translate(sup))
 #%% Calculate the O2 consumption rate
 
 R_o2_Het = Rates_Het[300:400, t, 0] + Rates_Het[300:400, t, 2] + Rates_Het[300:400, t, 4]   # the sum of DOC aerobic decomposition rate, CH4 aerobic oxidation rate and H2S oxidation rate
