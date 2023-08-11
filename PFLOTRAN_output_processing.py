@@ -17,7 +17,7 @@ import statistics as st
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-
+import seaborn as sns
 import os
 os.chdir('C:/Users/yz60069/TAI/TAI_fresh')
 #os.chdir('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Marsh Interior/All inundated/ root')
@@ -33,13 +33,16 @@ ntimepoint = 11
 
 
 #%% import data
-nvars = 8;  #number of variables that I want to investigate
+nvars = 9;  #number of variables that I want to investigate
 Full_Data = np.empty( shape = (ngrids,ntimepoint,nvars), dtype = np.float32)
 Var_str = {0: 'Liquid Saturation', 1: 'Total O2(aq) [M]', 2: 'Total CH4(aq) [M]', 3: 'Total DOM1 [M]', 4: 'Total SO4-- [M]',
-           5: 'Total H2S(aq) [M]', 6: 'Total Tracer2 [M]', 7: 'Total Tracer3 [M]'}
+           5: 'Total H2S(aq) [M]', 6: 'Total Tracer1 [M]', 7: 'Total Tracer2 [M]', 8: 'Total Tracer3 [M]',
+           9: 'Total Tracer5 [M]', 10: 'Total Tracer6 [M]'}
+
+#
 # the dictionary in which the variable ID is coupled with the variable name
 
-
+thefile = 'TAI_wetland2'
 for var_id in range(0,nvars):
     
     var_str = Var_str[var_id]
@@ -52,11 +55,11 @@ for var_id in range(0,nvars):
     for i in range(0,ntimepoint):
        
         if i < 10:
-           file_name = 'TAI_wetland2-00' + str(i) + '.tec'
+           file_name = thefile + '-00' + str(i) + '.tec'
         elif (i == 10 or i > 10) and i < 100:
-           file_name = 'TAI_wetland2-0' + str(i) + '.tec'
+           file_name = thefile + '-0' + str(i) + '.tec'
         elif (i == 100 or i > 100) and i < 1000:
-           file_name = 'TAI_wetland2-' + str(i) + '.tec'
+           file_name = thefile + '-' + str(i) + '.tec'
         
         with open(file_name,'r') as inputFile:
             read_lines = inputFile.readlines()
@@ -174,18 +177,35 @@ with open('C:/MBL/Research/PFLOTRAN DATA/pflotran outputs/OxyHet/Creek Bank/' + 
 #%%
 Data_NO = Full_Data
 MetF_NO = MetF
-Rates_NO = Rates
+
 
 #%%      
 Data_Homo = Full_Data
 MetF_Homo = MetF
-Rates_Homo = Rates
+
 
 
 #%%
 Data_Het = Full_Data
 MetF_Het = MetF
-Rates_Het = Rates
+
+
+#%%
+Data_Het_30roots = Full_Data
+MetF_Het_30roots = MetF
+Rates_Het_30roots = Rates
+
+
+#%%
+Data_Het_50roots = Full_Data
+MetF_Het_50roots = MetF
+Rates_Het_50roots = Rates
+
+
+#%%
+Data_Het_70roots = Full_Data
+MetF_Het_70roots = MetF
+Rates_Het_70roots = Rates
 
 
 #%% Calculate and Plot the mean profiles of different O2 injection modes
@@ -194,6 +214,10 @@ t = 10       #specify the time point, here extract the data on day 30
 MP_NO = np.zeros((9,ntimepoint, 6), dtype = float)
 MP_Homo = np.zeros((9, ntimepoint, 6), dtype = float)
 MP_Het = np.zeros((9, ntimepoint, 6), dtype = float)
+#MP_Het_30roots = np.zeros((9, ntimepoint, 6), dtype = float)
+#MP_Het_50roots = np.zeros((9, ntimepoint, 6), dtype = float)
+#MP_Het_70roots = np.zeros((9, ntimepoint, 6), dtype = float)
+
 
 for t in range(0, ntimepoint):
     for var_id in range(0,6):
@@ -201,7 +225,11 @@ for t in range(0, ntimepoint):
         MP_NO[:, t, var_id] = Data_NO[:, t, var_id].reshape(9,100).mean(axis = 1)      
         MP_Homo[:, t, var_id] = Data_Homo[:, t, var_id].reshape(9,100).mean(axis = 1)
         MP_Het[:,t, var_id] = Data_Het[:, t, var_id].reshape(9,100).mean(axis = 1)
-
+        #MP_Het_30roots[:,t, var_id] = Data_Het_30roots[:, t, var_id].reshape(9,100).mean(axis = 1)
+        #MP_Het_50roots[:,t, var_id] = Data_Het_50roots[:, t, var_id].reshape(9,100).mean(axis = 1)
+        #MP_Het_70roots[:,t, var_id] = Data_Het_70roots[:, t, var_id].reshape(9,100).mean(axis = 1)
+        
+        
 #%% Plot the profiles from different set up
 plt.rcParams.update({'font.size': 15})
 
@@ -215,34 +243,40 @@ else:
 
 y = depths[1:11]*100   #convert depth values to cm
 
-plt.plot(MP_NO[1:11, t, var_id] * conv, y, '-', color ='#303030', label = 'no O2 release'.translate(subscript))  #convert depth to cm
-plt.plot(MP_Homo[1:11, t, var_id] * conv, y, '-', color = '#24AEDB', label = 'Homogeneity')
-plt.plot(MP_Het[1:11, t, var_id] * conv, y, '-', color = '#D02F5E', label = 'Heterogeneity')
-
 sub = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 sup = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
 
+plt.plot(MP_NO[1:11, t, var_id] * conv, y, '-', color ='#303030', label = 'noROL')  #convert depth to cm
+plt.plot(MP_Homo[1:11, t, var_id] * conv, y, '-', color = '#24AEDB', label = 'ROL_Homo')
+plt.plot(MP_Het[1:11, t, var_id] * conv, y, '-', color = '#D02F5E', label = 'ROL_Het')
+#plt.plot(MP_Het_30roots[1:11, t, var_id] * conv, y, '--', color = '#D02F5E', label = 'ROL_Het, 30roots')
+#plt.plot(MP_Het_50roots[1:11, t, var_id] * conv, y, '-.', color = '#D02F5E', label = 'ROL_Het, 50roots')
+#plt.plot(MP_Het_70roots[1:11, t, var_id] * conv, y, '-*', color = '#D02F5E', label = 'ROL_Het, 70roots')
+
+
+
 if var_id == 1:
     xlab = 'O2'.translate(sub) +' %Air Sat.'.translate(sub)
-    plt.xlim(-2,52)
+    #plt.xlim(-2,52)
 elif var_id == 2:
     xlab = 'CH4 (aq, mmol'.translate(sub) + ' L-1)'.translate(sup)
 elif var_id == 3:
     xlab = 'DOC (mmol' + ' L-1)'.translate(sup)
+    plt.xlim(0,8)
 elif var_id == 4:
     xlab = 'SO4'.translate(sub) + '2- (mmol L-1)'.translate(sup)
-    plt.xlim(4.9, 9.2)
+    #plt.xlim(4.9, 9.2)
 elif var_id == 5:    
     xlab = 'H2S(aq,'.translate(sub)  + ' mmol L-1)'.translate(sup)
 
 plt.xlabel(xlab)
 plt.ylabel('Depth(cm)')
 if var_id == 1:
-    plt.legend(loc = 0)
+    plt.legend(loc = 'lower right')
 
 
 #%% Plot the time series of concentration at the rooting zone
-var_id = 4
+var_id = 1 
 if var_id == 1:
     conv = 1/2.5e-4*100
 else:
@@ -270,152 +304,204 @@ if var_id == 1:
     plt.legend(loc = 0)
 
 #%% compile the species concentration at the root layer
-ConcCmpr = np.zeros((4,5), dtype = float)
+ConcCmpr = np.zeros((6,5), dtype = float)
 ConcCmpr[0,0:5] = MP_NO[3,t,1:6]
 ConcCmpr[1,0:5] = MP_Homo[3,t,1:6]
 ConcCmpr[2,0:5] = MP_Het[3,t,1:6]
 
 #%% Calculate the percentage difference between Het and Homo
-ConcCmpr[3,] = (ConcCmpr[1,] - ConcCmpr[2,]) / ConcCmpr[1,] * 100
+ConcCmpr[3,] = (ConcCmpr[2,] - ConcCmpr[1,]) / ConcCmpr[1,] * 100  #Het vs Homo
+ConcCmpr[4,] = (ConcCmpr[1,] - ConcCmpr[0,]) / ConcCmpr[0,] * 100  #Homo vs noROL
+ConcCmpr[5,] = (ConcCmpr[2,] - ConcCmpr[0,]) / ConcCmpr[0,] * 100   #Het vs noROL
 
 
 
 #%% Compile the CH4 fluxes
-FluxCmpr = np.array([MetF_NO, MetF_Homo, MetF_Het]).reshape(3,4)
+FluxCmpr = np.zeros((6,4), dtype = float)
+FluxCmpr[0:3,:] = np.array([MetF_NO, MetF_Homo, MetF_Het]).reshape(3,4)
+
+# calculate the percentage differences
+FluxCmpr[3,:] = (FluxCmpr[2,:] - FluxCmpr[1,:]) / FluxCmpr[1,:] * 100
+FluxCmpr[4,:] = (FluxCmpr[1,:] - FluxCmpr[0,:]) / FluxCmpr[0,:] * 100
+FluxCmpr[5,:] = (FluxCmpr[2,:] - FluxCmpr[0,:]) / FluxCmpr[0,:] * 100
+
+
 FluxCmpr_df = pd.DataFrame(FluxCmpr)
 FluxCmpr_df.columns = ['Total Flux', 'Diffusion', 'Plant-mediated', 'Ebullition']
-FluxCmpr_df.index = ['NO', 'Homo', 'Het']
+FluxCmpr_df.index = ['NO', 'Homo', 'Het', 'Diff_Het_Homo', 'Diff_Homo_NO', 'Diff_Het_NO']
+
+
+#%% Plot the CH4 fluxes results
+plt.rcParams.update({'font.size': 15})
+group_names = ['Total', 'Surface D.', 'Plant-F.', 'Ebullition']
+bar_labels = ['noROL','ROL_Homo', 'ROL_Het']
+
+# Set the bar width and positions
+bar_width = 0.2
+x = np.arange(len(group_names))
+
+colors = ['#585858','#58ACFA', '#F7819F']
+# Plot the bars for each group
+for i in range(0,3):
+    plt.bar(x + i * bar_width, FluxCmpr[i], width=bar_width, label=bar_labels[i], color = colors[i])
+
+# Set the x-axis tick labels
+plt.xticks(x + (len(bar_labels) - 1) * bar_width / 2, group_names)
+
+# Set the axis labels and title
+
+#plt.xlim(0,15)
+#plt.ylim(-0.5,3)
+#plt.xticks([0, 2, 4, 6, 8, 10])
+
+# Add a legend
+plt.legend(loc=0)
+
+
+sub = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+sup = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
+plt.ylabel('CH4'.translate(sub) + ' Flux\n(mmol m-2 d-1)'.translate(sup))
 
 
 
 
-#%% S cycling
-# Calculate and plot the mean profiles under different SO4-- concentrations
+#%%  S cycling analysis
+Data_Homo_S = Full_Data
+MetF_Homo_S = MetF
+Rates_Homo_S = Rates
 
-t = 30        #specify the time point, here extract the data on day 30
-MP_noS = np.zeros((9,6), dtype = float)
-MP_lowS = np.zeros((9,6), dtype = float)
-MP_medS = np.zeros((9,6), dtype = float)
-MP_highS = np.zeros((9,6), dtype = float)
+#%%
+Data_Homo_noS = Full_Data
+MetF_Homo_noS = MetF
+Rates_Homo_noS = Rates
 
-for var_id in range(0,6):
-    #reshape the matrix of concentration to a 9*100 matrix, each row is the data of one soil layer containing 100 cells, and calculate the mean of all cells within the same layer
-    MP_noS[:,var_id] = noS[:, t, var_id].reshape(9,100).mean(axis = 1)      
-    MP_lowS[:,var_id] = lowS[:, t, var_id].reshape(9,100).mean(axis = 1)
-    MP_medS[:,var_id] = medS[:, t, var_id].reshape(9,100).mean(axis = 1)
-    MP_highS[:,var_id] = highS[:, t, var_id].reshape(9,100).mean(axis = 1)
+#%%      
+Data_S = Full_Data
+MetF_S = MetF
+Rates_S = Rates
 
 
 #%%
+Data_noS = Full_Data
+MetF_noS = MetF
+Rates_noS = Rates
 
+
+#%% Calculate and Plot the mean profiles of different O2 injection modes
+# Calculate the mean profiles
+t = 10       #specify the time point, here extract the data on day 30
+MP_Homo_S = np.zeros((9,ntimepoint, 6), dtype = float)
+MP_Homo_noS = np.zeros((9,ntimepoint, 6), dtype = float)
+MP_S = np.zeros((9, ntimepoint, 6), dtype = float)
+MP_noS = np.zeros((9, ntimepoint, 6), dtype = float)
+
+for t in range(0, ntimepoint):
+    for var_id in range(0,6):
+        #reshape the matrix of concentration to a 9*100 matrix, each row is the data of one soil layer containing 100 cells, and calculate the mean of all cells within the same layer
+        MP_Homo_S[:, t, var_id] = Data_Homo_S[:, t, var_id].reshape(9,100).mean(axis = 1)      
+        MP_Homo_noS[:, t, var_id] = Data_Homo_noS[:, t, var_id].reshape(9,100).mean(axis = 1)      
+        MP_S[:, t, var_id] = Data_S[:, t, var_id].reshape(9,100).mean(axis = 1)
+        MP_noS[:,t, var_id] = Data_noS[:, t, var_id].reshape(9,100).mean(axis = 1)
+
+#%% Plot the profiles from different set up
 plt.rcParams.update({'font.size': 15})
-fig, ax = plt.subplots()
 
-var_id = 5   #choose which variable to plot
+t = 10
+var_id = 1
+ 
 if var_id == 1:
     conv = 1/2.5e-4*100
 else:
-    conv = 1e6
+    conv = 1e3
 
-y = depths[1:8]*100   #convert depth values to cm
+y = depths[1:11]*100   #convert depth values to cm
 
-plt.plot(MP_noS[1:8, var_id] * conv, y, '-', color ='#303030', label = 'no S')  #convert depth to cm
-plt.plot(MP_lowS[1:8, var_id] * conv, y, '-', color = '#24AEDB', label = 'low S')
-plt.plot(MP_medS[1:8, var_id] * conv, y, '-', color = 'y', label = 'medium S')
-plt.plot(MP_highS[1:8, var_id] * conv, y, '-', color = '#D02F5E', label = 'high S')
+#plt.plot(MP_Homo_S[1:11, t, var_id] * conv, y, '-', color ='#0174DF', label = 'with S cycling'.translate(subscript))  #convert depth to cm
+#plt.plot(MP_Homo_noS[1:11, t, var_id] * conv, y, '--', color ='#0174DF', label = 'no S cycling'.translate(subscript))  #convert depth to cm
 
-subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
+plt.plot(MP_S[1:11, t, var_id] * conv, y, '-', color = '#0174DF', label = 'with S cycling')
+plt.plot(MP_noS[1:11, t, var_id] * conv, y, '--', color = '#0174DF', label = 'no S cycling')
+
+sub = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+sup = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
 
 if var_id == 1:
-    xlab = 'O2 saturation (%)'
+    xlab = 'O2'.translate(sub) +' %Air Sat.'.translate(sub)
+    #plt.xlim(-2,52)
 elif var_id == 2:
-    xlab = 'CH4(μM)'.translate(subscript)
+    xlab = 'CH4 (aq, mmol'.translate(sub) + ' L-1)'.translate(sup)
+    plt.xlim(0, 1.5)
 elif var_id == 3:
-    xlab = 'DOC (μM)'
+    xlab = 'DOC (mmol' + ' L-1)'.translate(sup)
+    plt.xlim(0,15)
 elif var_id == 4:
-    xlab = 'SO4'.translate(subscript) + '2-(μM)'.translate(superscript)
-elif var_id == 5:
-    xlab = 'H2S(aq) (μM)'.translate(subscript)
+    xlab = 'SO4'.translate(sub) + '2- (mmol L-1)'.translate(sup)
+    #plt.xlim(4.9, 9.2)
+elif var_id == 5:    
+    xlab = 'H2S(aq,'.translate(sub)  + ' mmol L-1)'.translate(sup)
 
 plt.xlabel(xlab)
 plt.ylabel('Depth(cm)')
-plt.legend(loc = 0)
-
-
-
-
-#%% compile the species concentration at the root layer
-ConcCmpr = np.zeros((4,6), dtype = float)
-ConcCmpr[0,] = MP_noS[3,]
-ConcCmpr[1,] = MP_lowS[3,]
-ConcCmpr[2,] = MP_medS[3,]
-ConcCmpr[3,] = MP_highS[3,]
-ConcCmpr = pd.DataFrame(ConcCmpr)
-ConcCmpr.index = ['noS', 'lowS', 'medS (standard run)', 'highS']
-
-
-
-#%% Compile the CH4 fluxes
-FluxCmpr = np.array([MetFlux_noS, MetFlux_lowS, MetFlux_medS, MetFlux_highS]).reshape(4,3)
-FluxCmpr_df = pd.DataFrame(FluxCmpr)
-FluxCmpr_df.columns = ['Total Flux', 'Diffusion', 'Ebullition']
-FluxCmpr_df.index = ['noS', 'lowS', 'medS', 'highS']
-
-
-
-
-
-
-
-#%% plot the S cycling vs no S cycling
-plt.rcParams.update({'font.size': 15})
-fig, ax = plt.subplots()
-
-var_id = 2
-var_str = Var_str[var_id]
-t = 30
-
 if var_id == 1:
-    conv = 1/2.5e-4*100
-else:
-    conv = 1e6
-
-
-# calculate and plot mean profiles
-MeanProfs = []
-for z in range(0,nz):
-    i_start = nx * ny * z
-    i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_noS[i_start:i_end, :, var_id] , axis = 0)
-    MeanProfs.append(temp_mean)
-
-MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color ='#303030', label = 'no S cycling')  #convert depth to cm
+    plt.legend(loc = 0)
 
 
 
-MeanProfs = []
-for z in range(0,nz):
-    i_start = nx * ny * z
-    i_end = nx * ny * (z + 1)
-    temp_mean = np.mean(Data_S[i_start:i_end, :, var_id] , axis = 0)
-    MeanProfs.append(temp_mean)
 
-MeanProfs = np.array(MeanProfs) * conv
-plt.plot(MeanProfs[1:8,t], depths[1:8]*100, '-', color = '#24AEDB', label = 'with S cycling')
-
-subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-superscript = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
-plt.xlabel('CH4(μM)'.translate(subscript))
-plt.ylabel('Depth(cm)')
-plt.legend(loc = 0)
+#%% Analysis of S cycling data, Compile results
+ConcCmpr = np.zeros((4,5), dtype = float)
+ConcCmpr[0,:] = MP_Homo_S[3,10,1:6]        #first row, ROL_Homo with S
+ConcCmpr[1,:] = MP_S[3,10,1:6]        #second row, ROL_Het with S
+ConcCmpr[2,:] = MP_Homo_noS[3,10,1:6]        #thrid row, ROL_Homo no S
+ConcCmpr[3,:] = MP_noS[3,10,1:6]        #forth row, ROL_Het no S
 
 
 
-#%% save plot
-fn = r'C:\MBL\Research\Oxy Het MS\Figures\MeanProfs\oxygen.eps'
-fig.savefig(fn, format='eps')
+#%% Plot CH4 emissions data
+MetF = np.zeros((2,4), dtype = float)
+MetF[0,:] = np.array(MetF_S)
+MetF[1,:] = np.array(MetF_noS)
+
+
+#%%
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+# Generate some sample data
+group_names = ['Total', 'Surface D.', 'Plant-F.', 'Ebullition']
+bar_labels = ['with S cycling', 'no S cycling']
+
+# Set the bar width and positions
+bar_width = 0.2
+x = np.arange(len(group_names))
+
+#colors = ['#2E2E2E', '#BDBDBD']
+colors = ['#2E9AFE', '#2E9AFE']
+# Plot the bars for each group
+for i in range(0,2):
+    if i == 0:
+        plt.bar(x + i * bar_width, MetF[i], width=bar_width, label=bar_labels[i], color = 'w', edgecolor = '#F5A9BC', hatch = '//', linewidth = 2)
+    elif i == 1:
+        plt.bar(x + i * bar_width, MetF[i], width=bar_width, label=bar_labels[i], color = 'w', edgecolor = '#F5A9BC', hatch = '', linewidth = 2)
+
+# Set the x-axis tick labels
+plt.xticks(x + (len(bar_labels) - 1) * bar_width / 2, group_names)
+
+# Set the axis labels and title
+
+#plt.xlim(0,15)
+#plt.ylim(-0.5,3)
+#plt.xticks([0, 2, 4, 6, 8, 10])
+
+# Add a legend
+plt.legend(loc=0)
+
+
+sub = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+sup = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
+plt.ylabel('CH4'.translate(sub) + ' Flux\n(mmol m-2 d-1)'.translate(sup))
+#plt.title('Homogeneity Mode')
 
 #%%
 # # # field data
@@ -652,3 +738,11 @@ plt.ylabel('CH4 umol/L')
 x = Rates[i_start:i_end, t, 1]
 y = ch4_conc
 plt.plot(x, y, 'ro')
+
+
+
+
+#%% export to csv
+df = pd.DataFrame(ConcCmpr)
+df.to_csv('concentration_compare', index = False)
+

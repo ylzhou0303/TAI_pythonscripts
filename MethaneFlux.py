@@ -6,8 +6,51 @@ Created on Tue Jan  3 16:08:31 2023
 """
 
 #%% This file calculates the flux of the threshold-triggered removal of CH4 
-# I set up an artificial reaction in PFLOTRAN to simulate the ebullition process, in which CH4 is removed when CH4 concentration is above the threshold
-# I have three different methods to calculate the ebullition flux below
+# I set up artificial reactions in PFLOTRAN to simulate the ebullition process, in which CH4 is removed when CH4 concentration is above the threshold
+
+#%% calculate the methane efflux
+# I used a Tracer1 in PFLOTRAN to keep track of the plant-mediated flux
+# So the amount change in Tracer1 from day9 to day10 is the plant-mediated flux
+
+# find out which column in the mass balance file is Tracer1
+Tracer1_col = 9       # the column number of the total amount of Tracer1 within the entire domain (mol) in the mass balance file
+bc_col = 34          # the column number of the exchange of Tracer1 across the boundary (mol/d) in the mass balance file
+day10_row = 9
+day9_row = 8
+
+#increase in Tracer1 in the modeled soil column from day9 to day10
+PlantF_domain = Mass[day10_row,Tracer1_col] - Mass[day9_row,Tracer1_col] - Mass[day9_row,bc_col]
+# this is the plant-mediated flux of the simulation domain per day
+
+#the difference would be the outflux of CH4
+PlantF_areal = PlantF_domain * 1000 / 0.01   #mmol/m2/day
+
+
+
+#%% calculate the ebullition flux
+# I used Tracer6 to keep track of the ebullition
+Tracer6_col = 13    #Global tracer6 (mol) amount is on the 13th column of the mass balance file
+bc_col = 38        # daily exchange rate of tracer6 across the boundary is on the 38th column of the mass balance file
+
+Ebl_domain = Mass[day10_row, Tracer6_col] - Mass[day9_row, Tracer6_col] - Mass[day9_row, bc_col]
+Ebl_areal = Ebl_domain * 1000 / 0.01      #mmol m-2 d-1
+
+
+#%% Compile fluxes to calculate the total flux
+import pandas as pd
+MetF_Diffusion = - Mass[8,39]*1e3/0.01   # the diffusion flux via sediment-air interface, unit: mmol m-2 d-1
+
+MetF_total = MetF_Diffusion + Ebl_areal + PlantF_areal
+
+MetF = {'Total Flux': MetF_total, 'Diffusion': MetF_Diffusion, 'Plant-mediated': PlantF_areal, 'Ebullition': Ebl_areal}
+MetF = pd.DataFrame(MetF, index = ['Flux'])
+print(MetF)
+
+
+
+
+
+#%%%%%%%%%%%%%%%%%%% OLD APPROACHES BASED ON REACTION RATE
 
 #%% Ebullition
 # Method 1： Calculate the difference between theorectical CH4 concentration and the threshold
@@ -26,13 +69,14 @@ t = 9   #specify the timepoint (day)
 # I could not use the CH4 concentration reported by PFLOTRAN to calculate the rate of ebullition.
 # I need to first calculate what the theoretical CH4 concentration on next day would be if there is no ebullition.
 
-ch4_initial = Full_Data[:, t, 2]  #extract the CH4 concentration on day 29
-ch4_increase = (Rates[:, t, 1] - Rates[:, t, 2] - Rates[:, t, 5]) * 3600 * 24   #the difference between methanogenesis rate and methane oxidation rate is the net increase in CH4 concentration
-ch4_hypo_t = ch4_initial + ch4_increase   #the hypothetical CH4 concentration on day30 if there is no ebullition going on  
+ch4_initial = Full_Data[:, t, 2]  #extract the CH4 concentration on day 9
+ch4_increase = (Rates[:, t, 1] - Rates[:, t, 2]) * 3600 * 24   #the difference between methanogenesis rate and methane oxidation rate is the net increase in CH4 concentration
+
+ch4_theo_t = ch4_initial + ch4_increase   #the hypothetical CH4 concentration on day10 if there is no ebullition going on  
 
 # 2) Calculate the extra CH4 relative to the threshold concentration, which would be the ebullition efflux in my model framework
 Cth = 0.0014236   #threshold concentration, unit: mol L-1
-Diff = (ch4_hypo_t - Cth).reshape(nz * nx *ny,1)     #the difference between the hypothetical CH4 concentration and threshold
+Diff = (ch4_theo_t - Cth).reshape(nz * nx *ny,1)     #the difference between the hypothetical CH4 concentration and threshold
 Trigger = (Diff > 0) * 1                      # judge if and where the hypothetical CH4 concentration is above threshold, if yes, assign 1, if not, assign 0
 
 Volume = Thickness * Area_cell * Porosity           #water volume of each of the 900 grid cells
@@ -48,35 +92,66 @@ ch4_conc = Full_Data[:, t, 2]   #extract the CH4 conc
 Area_cell = 0.01 * 0.01    #surface area of each cell, unit: m2
 Vol_cell = Area_cell * Thickness * 0.8    #water volume of each cell, 0.8 is the porosity
 
-print('Have you specified the correct mode yet????\n'*3)
+print('Have you specified the correct mode and root numbers yet????\n'*3)
 
-mode = 'Homo'
+mode = 'Het'
+nroot = 15
 
+Cth_Het = {15: 1e-7, 30: 1e-8, 50: 1e-8, 70: 5e-9}
+Vmax_Het = {15: 1.06e-7, 30: 5.3e-8, 50: 3.2e-8, 70: 2.28e-8}
+
+
+o2_injection = 3e3 * 1e-8   #O2 injection rate for the domain, unit: mol hr-1, this is the O2-fluid concentration times the flow rate
 
 
 if mode == 'Homo' or mode == 'NO':
     Cth = 1e-7             # the tracer2 threshold for plant-mediated CH4 transport for the Homo mode
-    Vmax = 1.4e-8                  # maximum reaction rate for the reaction simulating homogeneous plant-mediated CH4 transport
-    HSC = 1e-2    
-    tracer_conc = Full_Data[:, t, 6]        #extract concentration of Tracer2   
+    Vmax_PF = 1.6e-8                  # maximum reaction rate for the reaction simulating homogeneous plant-mediated CH4 transport
+    HSC_PF = 1e-2    
+    tracer_conc = Full_Data[:, t, 7]        #extract concentration of Tracer2
+    
+    if mode == 'NO':
+        o2_inc = 0
+    elif mode == 'Homo':
+        o2_inc = o2_injection / (Vol_cell * 1e3 * 100)   # increase in O2 concentration for each cell due to O2 injection
         
 elif mode == 'Het':                 
-    Cth = 1e-7             # tracer2 threshold for the heterogeneous mode of root setup (1e-4 mol/L-1), use 1e-5 when doing sensitivity analysis with a high diffusion coefficient
-    Vmax = 7.23e-8                  # maximum rate for heterogeneous mode
-    HSC = 1e-2
-    tracer_conc = Full_Data[:, t, 7]
+    Cth = Cth_Het[nroot]             # tracer2 threshold, 1e-7 for 15roots, 1e-8 for 30roots and 50roots,
+    Vmax_PF = Vmax_Het[nroot]                  # maximum rate for heterogeneous mode, 1.06e-7 for 15 roots, 5.3e-8 for 30roots, 
+    HSC_PF = 1e-2
+    tracer_conc = Full_Data[:, t, 8]
+    o2_inc = o2_injection / (Vol_cell * 1e3 * nroot)   # increase in O2 concentration for each O2 injection cell
     
 
 Trigger = (tracer_conc > Cth) * 1        #judge if the tracer2 concentration is above the threshold, if yes, assign 1, if not assign 0
-Monod = ch4_conc / (ch4_conc + HSC)
-PlantF_rate = Vmax * Monod.reshape(900,1) * Trigger.reshape(900,1)    #calculate the reaction rate for each root cell, the non-root cells would multiply 0, unit: mol L-1 s-1
+
+# Calculate the theoretical CH4 concentration if there is only CH4 oxidation and methanogenesis
+# Then use that theoretical CH4 concentraiion to calculate the plant-mediated flux
+
+# First, inject O2, calculate the theoretical O2 concentration due to injection
+o2_theo = Full_Data[:, t, 1].reshape(900,1) + o2_inc * Trigger.reshape(900,1)
+
+# Second, calculate the theoretical reduction in CH4 concentration due to CH4 oxidation, temporal resolution: 1 hour
+ch4 = Full_Data[:, t, 2].reshape(900,1)
+ch4_oxi = Vmax[0,2] * (o2_theo / (o2_theo + HSC[0,0])) * (ch4 / (ch4 + HSC[1,2])) * 3600
+
+# Third, calculate the theoretical increase in CH4 concentration due to methanogenesis
+doc = Full_Data[:, t, 3].reshape(900,1)
+ch4_met = Vmax[0,1] * (doc / (doc + HSC[2,1])) * 3600
+
+# Forth, calculate the theoretical CH4 concentration if there is only CH4 oxidation and methanogenesis
+ch4_theo_t = ch4 + ch4_met - ch4_oxi
+
+Monod = ch4_theo_t / (ch4_theo_t + HSC_PF)
+PlantF_rate = Vmax_PF * Monod.reshape(900,1) * Trigger.reshape(900,1)    #calculate the reaction rate for each root cell, the non-root cells would multiply 0, unit: mol L-1 s-1
 PlantF_cell = PlantF_rate * 1e3 * (3600*24) * Vol_cell      # the removal of CH4 from each cell for one day, mol cell-1 d-1
 PlantF_domain = np.sum(PlantF_cell)               # the flux from the domain, mol d-1
 PlantF_areal = PlantF_domain * 1e3 / Area_domain  #divided by the surface area of the simulation domain, convert to mmol m-2 d-1
 
 #%% Compile fluxes to calculate the total flux
 import pandas as pd
-MetF_Diffusion = - Mass[t,30]*1e3/0.01   # the diffusion flux via sediment-air interface, unit: mmol m-2 d-1
+MetF_Diffusion = - Mass[t,39]*1e3/0.01   # the diffusion flux via sediment-air interface, unit: mmol m-2 d-1
+
 MetF_total = MetF_Diffusion + Ebl_areal + PlantF_areal
 
 MetF = {'Total Flux': MetF_total, 'Diffusion': MetF_Diffusion, 'Plant-mediated': PlantF_areal, 'Ebullition': Ebl_areal}
@@ -211,25 +286,8 @@ plt.plot(MeanProfs[:,29], depths, 'r-')
 plt.plot(MeanProfs[:,30], depths, 'k-')
 
 
-#%% A second way to calculate the methane outflux
-# I used a Tracer2 in PFLOTRAN to trace the balance between CH4 productin and oxidation
-# So the concentration change of Tracer2 within 1 day is how much of CH4 changes if there is no outgassing
-# The difference between that and the actual change of CH4 within 1 day is the outflux
 
-# find out which column in the mass balance file is Tracer2
-Tracer2_global_i = 9
-Tracer2_bc_i = 26
-Met_global_i = 10
 
-#increase in Tracer2 in the modeled soil column
-Tracer2_inc = (Mass[29,Tracer2_global_i] - Mass[28,Tracer2_global_i]) - Mass[28,Tracer2_bc_i]
-#because the boundary condition conc. for Tracer2 had to be set up, some Tracer2 was taken out through the sed_air_interface, we need to add that back
-
-#the actual methane change calculated by PFLOTRAN
-Met_inc = Mass[29,Met_global_i] - Mass[28,Met_global_i]
-
-#the difference would be the outflux of CH4
-MetLoss_rate2 = (Tracer2_inc - Met_inc) / 0.01   #mol/m2/day
 
 #%% relationship between O2 and CH4 flux
 t = 29
@@ -348,3 +406,7 @@ d_conc_het = d_conc_het / 24/ 3600
 
 v_max_het = d_conc_het * 10
 HSC_het = c_soil * 10
+
+
+
+

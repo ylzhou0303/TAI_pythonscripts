@@ -29,22 +29,25 @@ from scipy.stats import pearsonr
 
 
 # 1. data frame for maximum reaction rate constants
-# standard runs: K_df = {'DOMAer': [2e-8], 'Met': [5e-10], 'MetOxi': [4e-9], 'SulRed': [5e-9],'SulOxi': [1e-7]}
+# standard runs: K_df = {'DOMAer': [1e-7], 'Met': [5e-10], 'MetOxi': [5e-10], 'SulRed': [6.24e-9],'SulOxi': [5e-7]}
 
-K_df = {'DOMAer': [1e-8], 'Met': [4e-10], 'MetOxi': [5e-10], 'SulRed': [6.24e-9],'SulOxi': [5e-7], 'MetOxiSul': [2e-10]}
-K_df = pd.DataFrame(K_df)
-K = np.array(K_df)
+Vmax_df = {'DOMAer': [1e-7], 'Met': [4e-10], 'MetOxi': [5e-10], 'SulRed': [6.24e-9],'SulOxi': [5e-7], 'MetOxiSul': [2e-10]}
+Vmax_df = pd.DataFrame(Vmax_df)
+Vmax = np.array(Vmax_df)
 
 
-K_O2 = 8e-6   # Monod Half saturation constant for O2
+   # Monod Half saturation constant for O2
+
+K_O2_1 = 8e-6
+K_O2_2 = 8e-7
 
 # 2. data frame for monod half saturation constants
-HSC_df = {'DOMAer': [K_O2, np.nan, 4e-3, np.nan, np.nan],
+HSC_df = {'DOMAer': [K_O2_1, np.nan, 4e-3, np.nan, np.nan],
           'Met': [np.nan, np.nan, 4e-3, np.nan, np.nan],
-          'MetOxi':[K_O2, 5e-4, np.nan, np.nan, np.nan],
+          'MetOxi':[K_O2_1, 5e-4, np.nan, np.nan, np.nan],
           'SulRed': [np.nan, np.nan, 4e-3, 1e-4, np.nan],
-          'SulOxi': [K_O2, np.nan, np.nan, np.nan, 1e-3],
-          'MetOxiSul':[np.nan, 5e-4, np.nan, 1e-4, np.nan]}   #HSC: half saturation constant
+          'SulOxi': [K_O2_2, np.nan, np.nan, np.nan, 1e-3],
+          'MetOxiSul':[np.nan, np.nan, np.nan, np.nan, np.nan]}   #HSC: half saturation constant
 
 HSC_df = pd.DataFrame(HSC_df)
 HSC_df.index = ['Monod_o2', 'Monod_ch4', 'Monod_dom', 'Monod_so4', 'Monod_h2s']
@@ -72,7 +75,7 @@ I = np.array(I_df)
 nreac = 6
 nspecies = 5
 
-def rate_calc(K, HSC, I, Conc):
+def rate_calc(Vmax, HSC, I, Conc):
     Rates = np.zeros(shape = (ngrids, ntimepoint, nreac), dtype = np.float32)
     
     for n in range(0,nreac):                      #calculate the rates for each reaction one by one                
@@ -91,7 +94,7 @@ def rate_calc(K, HSC, I, Conc):
                 inhb_temp = inhb / (Conc[:,:,j] + inhb)   #use the concentration matrix of this species times the half saturation constant
                 Inhb = Inhb * inhb_temp
         
-        Rates[:,:,n] = K[0,n] * Monod * Inhb            #save the rate for this timepoint and this reaction, then go into the next loop, i.e. next timepoint    
+        Rates[:,:,n] = Vmax[0,n] * Monod * Inhb            #save the rate for this timepoint and this reaction, then go into the next loop, i.e. next timepoint    
                                                         #if not considering Inhibition, the inhibition terms needs to be turned off
     return Rates
         
@@ -99,7 +102,7 @@ def rate_calc(K, HSC, I, Conc):
             
 #%% calculate reaction rates for all reactions
 Conc = Full_Data[:,:,1:6]  #concentration of the five species investigated
-Rates = rate_calc(K, HSC, I, Conc)
+Rates = rate_calc(Vmax, HSC, I, Conc)
 
 
 #%% verify the rates calculation
@@ -113,7 +116,7 @@ monod = HSC[2,1]
 inhb = I[0,1]
 
 
-rate = K[0,reac] *    dom / (monod + dom)    *    inhb/(inhb + oxygen)
+rate = Vmax[0,reac] *    dom / (monod + dom)    *    inhb/(inhb + oxygen)
 
 print((rate - Rates[grid,t,reac])/rate)
 
@@ -139,7 +142,7 @@ t = 10  #timepoint
 var_id = 1
 reac_id = 0
 
-K_o2 = 8e-6
+vmax = 2
 conv = 1/2.5e-4*100
 #o2_injection = np.zeros(100)
 #o2_injection[[13,17,26,27,28,46,52,57,58,61,65,72,75,81,82]] = 1.3 * 1e3 *(1e-8/15/3600)/(0.01*0.01*0.075*1e3) * 1800  #concentration change caused by O2 injection, unit: mol L-1 s-1
@@ -150,40 +153,50 @@ sup = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
 
 plt.rcParams.update({'font.size': 15})
 # the Monod curve
-y = x_o2 / (x_o2 + K_o2)
-plt.plot(x_o2 * conv, y, 'k--')
+y =  x_o2 / (x_o2 + K_O2_1)
+plt.plot(x_o2 * conv, y, 'k--', label = 'Theoretical Monod curve')
 plt.xlabel('O2 (%Air Sat.)'.translate(sub))
-plt.ylabel('Monod')
+plt.ylabel('Monod term')
 
 
-conc = Data_Het[300:400, t, var_id]
-rates = conc / (conc + K_o2)
-plt.plot(conc *conv, rates, 'ro', label = 'Rate of each cell')
+conc = Full_Data[300:400, t, var_id]
+rates =  conc / (conc + K_O2_1)
+plt.plot(conc *conv, rates, 'o', color = '#D02F5E', label = 'Data from grid cells, ROL_Het')
 
 # the mean of actual rate
-plt.plot(np.mean(conc) * conv, np.mean(rates), 'r*', markersize = 10, label = 'Mean rate')
+#plt.plot(np.mean(conc) * conv, np.mean(rates), '*', color = 'k', markersize = 10, label = 'Mean rate, ROL_Het')
 
 # the rate calculated by mean of concentration (not considering the spatial heterogeneity of O2)
-plt.plot(np.mean(conc) * conv, np.mean(conc)/(np.mean(conc) + K_o2), 'k*', markersize = 10, label = 'Rate of mean O2')
+#plt.plot(np.mean(conc) * conv, np.mean(conc)/(np.mean(conc) + K_O2), 'k*', markersize = 10, label = 'Rate of mean O2')
 
 
 
 # the homogeneity mode
 o2_homo = np.mean(Data_Homo[300:400, t, var_id])
-plt.plot(o2_homo * conv, o2_homo/(o2_homo + K_o2), 'b*', markersize = 10, label = 'Homo rate')
+#plt.plot(o2_homo * conv, o2_homo/(o2_homo + K_O2_1), '*', color = '#24AEDB', markersize = 10, label = 'Rate, ROL_Homo')
 
 # Calculate the Pearson's correlation coefficient to assess the linearity/nonlinearity
 Pcoef1 = pearsonr(conc, rates)
 Pcoef2 = pearsonr(x_o2, y)
 
 
-print(Pcoef1[0], Pcoef2[0])
-#plt.text(60, 0.55, 'K_O2=' + str(K_o2) + ' M\n' + 'Pearsons coef\n' + str(round(Pcoef1[0],2)))
+
+
+#print(Pcoef1[0], Pcoef2[0])
+
+
+nonlinearity = np.sum(conc > K_O2_1) / 100 * 100   # the portion of grid cells with O2 concentration above half-saturation constant
+
+print(nonlinearity)
+
+#plt.text(57, 2.2, 'K_O2=' + str(K_O2) + ' M\n' + 'Pearsons coef\n' + str(round(Pcoef1[0],2)))
 #plt.text(55, 0.55, 'O2 injection=\n60' +' mmol m-2 d-1'.translate(sup) + '\nPearsons coef ' + str(round(Pcoef1[0],2)))
-plt.text(55, 0.55, 'μmax=\n1e-6' +' mol L-1 s-1'.translate(sup) + '\nLinearity ' + str(round(Pcoef1[0],2)))
-plt.legend(loc = 0)
-plt.xlim(-5,102)
-plt.ylim(0,1)
+#plt.text(55, 0.75, 'K_O2=\n1e-' +' mol L-1'.translate(sup) + '\nLinearity ' + str(round(Pcoef1[0],2)))
+#plt.legend(loc = 0)
+#plt.text(50,0.47, 'Linearity='+str(round(Pcoef1[0],2)))
+
+#plt.xlim(-5,102)
+plt.ylim(-0.1,1)
 
 #%% Plot the time series of mean reaction rates of Het vs Homo
 Monod_t = np.zeros((ntimepoint,3), dtype = float)
@@ -526,3 +539,92 @@ plt.ylim([0.0005,0.0022])
 plt.xlabel('Time (day)')
 plt.ylabel('CH4 concentration (M)')
 plt.legend(loc = 0)
+
+
+
+
+#%% Vary the K and vmax, based on Vallino 2011, calculate the vmax from the varied K
+# K = K* e^4
+# vmax = v* e^2 (1-e^2) 
+
+
+#%% For DOC aerobic decomposition
+K1 = 8e-6   #the standard Monod half saturation constant
+v1 = 1e-7   # the standard vmax
+K_star = 5e-3 #mol L-1, Vallino 2011
+# calculate the growth efficiency
+e1 = pow(K1 / K_star, 0.25)
+#calculate the v*
+v_star = v1 / (pow(e1,2) * (1 - pow(e1,2)))
+
+# now vary the K
+K2 = 3.75e-5
+
+#calculate the growth efficiency at a higher K
+e2 = pow(K2 / K_star, 0.25)
+#calculate the v2
+v2 = v_star * pow(e2,2) * (1 - pow(e2,2))
+
+
+# another K
+K3 = 1e-4
+
+#calculate the growth efficiency at a higher K
+e3 = pow(K3 / K_star, 0.25)
+#calculate the v2
+v3 = v_star * pow(e3,2) * (1 - pow(e3,2))
+
+
+
+#%% For CH4 aerobic oxidation
+K1 = 8e-6   #the standard Monod half saturation constant
+v1 = 5e-10   # the standard vmax
+K_star = 5e-3 #mol L-1, Vallino 2011
+# calculate the growth efficiency
+e1 = pow(K1 / K_star, 0.25)
+#calculate the v*
+v_star = v1 / (pow(e1,2) * (1 - pow(e1,2)))
+
+# now vary the K
+K2 = 3.75e-5
+
+#calculate the growth efficiency at a higher K
+e2 = pow(K2 / K_star, 0.25)
+#calculate the v2
+v2 = v_star * pow(e2,2) * (1 - pow(e2,2))
+
+
+# another K
+K3 = 1e-4
+
+#calculate the growth efficiency at a higher K
+e3 = pow(K3 / K_star, 0.25)
+#calculate the v2
+v3 = v_star * pow(e3,2) * (1 - pow(e3,2))
+
+
+#%% For H2S aerobic oxidation
+K1 = 8e-6   #the standard Monod half saturation constant
+v1 = 5e-7   # the standard vmax
+K_star = 5e-3 #mol L-1, Vallino 2011
+# calculate the growth efficiency
+e1 = pow(K1 / K_star, 0.25)
+#calculate the v*
+v_star = v1 / (pow(e1,2) * (1 - pow(e1,2)))
+
+# now vary the K
+K2 = 3.75e-5
+
+#calculate the growth efficiency at a higher K
+e2 = pow(K2 / K_star, 0.25)
+#calculate the v2
+v2 = v_star * pow(e2,2) * (1 - pow(e2,2))
+
+
+# another K
+K3 = 1e-4
+
+#calculate the growth efficiency at a higher K
+e3 = pow(K3 / K_star, 0.25)
+#calculate the v2
+v3 = v_star * pow(e3,2) * (1 - pow(e3,2))
