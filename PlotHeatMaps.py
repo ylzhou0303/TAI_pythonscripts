@@ -5,8 +5,7 @@ Created on Fri Dec 30 18:22:06 2022
 @author: YZ60069
 """
 
-#%% This file analyzes the biogeochemistry of each grid under O2 spatial heterogeneity
-# to investigate how O2 heterogeneity is influencing the biogeochemistry
+#%% This file plot the heatmaps for each variable to show the spatial heterogeneity
 
 import pandas as pd
 

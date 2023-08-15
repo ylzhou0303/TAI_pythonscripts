@@ -5,13 +5,12 @@ Created on Wed Dec 21 14:10:08 2022
 @author: YZ60069
 """
 
-#%% Opens the PFLOTRAN mass balance file
+#%% This file reads in and process the PFLOTRAN mass balance file
 import pickle
 import numpy as np
 import pandas as pd
 
 #%%
-#file_name = r"C:\Users\yz60069\TAI\TAI_fresh\TAI_wetland2-mas.dat"
 
 file_name = thefile + '-mas.dat'
 
@@ -37,12 +36,3 @@ Mass = np.array(Mass)
 #create a data frame so it is easier to check
 Mass_df = pd.DataFrame( data = Mass, columns = variable_list_cor)
 
-#%%
-filename = 'ExampleMassBalance.pickle'
-with open(r'C:\MBL\Research\PFLOTRAN DATA\pflotran outputs\Example_MassBalanceFile' + filename, 'wb') as handle:
-    pickle.dump([mass_bal, variable_list_cor], handle)
-
-#%%
-filename = 'ExampleMassBalance.pickle'
-with open(r'C:\MBL\Research\PFLOTRAN DATA\pflotran outputs\Example_MassBalanceFile' + filename, 'rb') as handle:
-    MassBalance = pickle.load(handle)
